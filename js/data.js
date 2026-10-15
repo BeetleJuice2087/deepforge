@@ -240,12 +240,12 @@ window.DF = window.DF || {};
     ['..c...', '.ccc..', '.cccc.', 'cccccc', '.dada.', 'eeeeee', '.ebbe.', '.eeee.', '.e..e.', 'f....f'],
   ];
   DF.MAGE_COLORS = { a: '#f0c8a0', b: '#ffd66a', c: '#6a4ad8', d: '#1a1c2a', e: '#4a35a8', f: '#2a2040' };
-  // The Ranger: green hood (c), face (a) and eyes (d), tunic (e) with a belt (b), a quiver on the back (g), boots (f).
   DF.RANGER = [
-    ['.cc...', '.cccc.', 'cccccc', '.cadad', 'geeeee', 'geebee', '.eeee.', '.e..e.', '.f..f.'],
-    ['.cc...', '.cccc.', 'cccccc', '.cadad', 'geeeee', 'geebee', '.eeee.', '.e..e.', 'f....f'],
+    ['.ccr..', '.cccc.', 'cccccc', '.kadad', 'geeeee', 'geebee', '.hhhh.', '.h..h.', '.f..f.'],
+    ['.ccr..', '.cccc.', 'cccccc', '.kadad', 'geeeee', 'geebee', '.hhhh.', '.h..h.', 'f....f'],
   ];
-  DF.RANGER_COLORS = { a: '#f0c8a0', b: '#c8a040', c: '#3a8a4a', d: '#1a1c2a', e: '#5a7a3a', f: '#5a3a20', g: '#8a5a32' };
+  // Leather hat (c) with a white feather (r), hair (k), face (a) and eyes (d), green tunic (e), gold buckle (b), brown pants (h), boots (f), quiver (g).
+  DF.RANGER_COLORS = { a: '#e3b48a', b: '#c89a3a', c: '#9a7040', d: '#1a1c2a', e: '#3f7a3a', f: '#3a2614', g: '#8a5a32', h: '#7a5232', k: '#6a4a2a', r: '#f0e8d0' };
   // The Tinkerer: leather cap (b), brass goggles (g), shirt (c), a big apron (e), boots (f).
   DF.TINKERER = [
     ['.bbbb.', 'bbbbbb', '.gagg.', '.aaaa.', 'ceeeec', 'ceeeec', '.eeee.', '.c..c.', '.f..f.'],
