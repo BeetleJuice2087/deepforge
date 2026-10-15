@@ -1495,6 +1495,7 @@
         g.fillStyle = wTop; g.fillRect(X, Y + 2, T, 2);
       }
     }
+    decorateRoom(g, r, th);
     // Wall shading where the wall meets the floor (a soft shadow along the top wall).
     g.fillStyle = 'rgba(0,0,0,0.28)'; g.fillRect(T, T, LW - 2 * T, 2);
     g.fillStyle = C.lighten(col.wall, 0.12); g.fillRect(T, T - 1, LW - 2 * T, 1);
@@ -1505,6 +1506,133 @@
       if (d === 'n' || d === 's') { g.fillRect(X - 1, Y, 1, T); g.fillRect(X + T, Y, 1, T); } else { g.fillRect(X, Y - 1, T, 1); g.fillRect(X, Y + T, T, 1); }
     }
     return c;
+  }
+  /* ---- Floor decorations: carved circles, mosaics, runners, cracks, bones, moss and banners ----
+     Painted once into the room's background, in the floor's own colours, and the same every visit. */
+  function decorateRoom(g, r, th) {
+    const col = th.colors, el = th.element, R = DF.seeded(th.name + '|' + r.gx + ',' + r.gy), rf = () => R(10000) / 10000;
+    const carve = C.darken(col.floor, 0.38), carve2 = C.darken(col.floor, 0.2), inlay = C.mix(col.floor, col.accent, 0.32), inlayHi = C.mix(col.floor, col.accent, 0.55);
+    const floorAt = (x, y) => { const tx = Math.floor(x / T), ty = Math.floor(y / T); if (tx < 1 || ty < 1 || tx >= RW - 1 || ty >= RH - 1) return false; const t = r.tiles[ty * RW + tx]; return t === TL.FLOOR; };
+    const px = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (!floorAt(x, y)) return; g.fillStyle = c; g.fillRect(x, y, 1, 1); };
+    const ring = (cx, cy, rad, c, dash) => { const n = Math.ceil(rad * 7); for (let i = 0; i < n; i++) { if (dash && (i % dash) < dash / 2) continue; const a = i / n * Math.PI * 2; px(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, c); } };
+    const line = (x0, y0, x1, y1, c) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 0; i <= n; i++) px(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, c); };
+    const cx = LW / 2, cy = LH / 2 + 0.5;
+    // A rune circle: rings, spokes and little glyphs, the inner bits picked out in the floor's accent.
+    function runeCircle(rad, glow) {
+      // Solid carved bands: a dark groove, a raised stone ring, another groove; then an inner ring and spokes.
+      const stone = C.lighten(col.floor, 0.07), stoneHi = C.lighten(col.floor, 0.14);
+      const inner = rad * 0.56, rot = rf() * Math.PI, spokes = 6 + R(3) * 2;
+      for (let y = -rad - 1; y <= rad + 1; y++) for (let x = -rad - 1; x <= rad + 1; x++) {
+        const d = Math.hypot(x, y), X = cx + x, Y = cy + y;
+        if (d <= rad && d > rad - 1.2) px(X, Y, carve);
+        else if (d <= rad - 1.2 && d > rad - 4.2) px(X, Y, y < 0 && d > rad - 2.2 ? stoneHi : stone);
+        else if (d <= rad - 4.2 && d > rad - 5.4) px(X, Y, carve);
+        else if (d <= inner && d > inner - 1.2) px(X, Y, carve);
+        else if (d <= inner - 1.2 && d > inner - 3) px(X, Y, stone);
+        else if (d <= inner - 3 && d > inner - 4) px(X, Y, carve2);
+      }
+      // Glyphs set into the stone ring, glowing in the floor's accent.
+      const glyphs = spokes * 2;
+      for (let k = 0; k < glyphs; k++) {
+        const a = rot + k / glyphs * Math.PI * 2, gx = Math.round(cx + Math.cos(a) * (rad - 2.7)), gy = Math.round(cy + Math.sin(a) * (rad - 2.7));
+        const c = glow ? (k % 2 ? inlayHi : inlay) : (k % 2 ? inlay : carve2);
+        if (k % 2) { px(gx, gy, c); px(gx + 1, gy, c); px(gx, gy - 1, c); } else { px(gx, gy, c); px(gx - 1, gy + 1, c); px(gx + 1, gy + 1, c); }
+      }
+      for (let k = 0; k < spokes; k++) { const a = rot + k / spokes * Math.PI * 2; line(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner, cx + Math.cos(a) * (rad - 5.4), cy + Math.sin(a) * (rad - 5.4), carve2); }
+      if (glow) { ring(cx, cy, inner - 2, inlay, 3); px(cx, cy, inlayHi); px(cx - 1, cy, inlay); px(cx + 1, cy, inlay); px(cx, cy - 1, inlay); px(cx, cy + 1, inlay); }
+    }
+    // A diamond mosaic in the middle of the room.
+    function mosaic(w, h) {
+      const stone = C.lighten(col.floor, 0.07), stoneHi = C.lighten(col.floor, 0.13);
+      for (let y = -h - 1; y <= h + 1; y++) for (let x = -w - 1; x <= w + 1; x++) {
+        const d = Math.abs(x) / w + Math.abs(y) / h, X = cx + x, Y = cy + y, edge = 1.6 / Math.min(w, h);
+        if (d > 1) continue;
+        if (d > 1 - edge) px(X, Y, carve); // outer groove
+        else if (d > 1 - edge * 3) px(X, Y, y < 0 ? stoneHi : stone); // raised stone border
+        else if (d > 1 - edge * 4) px(X, Y, carve);
+        else if (d < 0.42 && d > 0.42 - edge * 1.6) px(X, Y, carve2); // inner diamond
+        else if (d <= 0.42 - edge * 1.6) px(X, Y, (x + y) % 2 === 0 ? inlay : C.mix(col.floor, col.accent, 0.2)); // inlaid centre
+        else if ((Math.abs(x) + Math.abs(y)) % 5 === 0) px(X, Y, carve2); // fine pattern
+      }
+    }
+    // A worn runner rug between two doors.
+    function runner(dir) {
+      const rugA = C.mix(col.floor, th.colors.accent, 0.18), rugB = C.darken(C.mix(col.floor, th.colors.accent, 0.3), 0.2);
+      const horiz = dir === 'h', len = horiz ? LW - 2 * T - 6 : LH - 2 * T - 6, wid = 9;
+      for (let i = 0; i < len; i++) for (let j = 0; j < wid; j++) {
+        const X = horiz ? T + 3 + i : cx - wid / 2 + j, Y = horiz ? cy - wid / 2 + j : T + 3 + i;
+        const edge = j === 0 || j === wid - 1, trim = j === 2 || j === wid - 3;
+        if (rf() < 0.06) continue; // worn patches
+        px(X, Y, edge ? carve : trim ? (i % 4 < 2 ? inlay : rugB) : rugA);
+      }
+    }
+    if (r.type === 'start') runeCircle(20, false);
+    else if (r.type === 'boss') runeCircle(30, true);
+    else if (r.type === 'forge') runeCircle(16, true);
+    else if (r.type === 'treasure') mosaic(18, 13);
+    else if (r.type === 'camp') { // a ring of soot round the fire, and a bedroll
+      for (let i = 0; i < 90; i++) { const a = rf() * Math.PI * 2, d = 6 + rf() * 7; px(cx + Math.cos(a) * d, cy + 2 + Math.sin(a) * d * 0.7, C.darken(col.floor, 0.3)); }
+      const bx = cx + 18, by = cy + 6; for (let y = 0; y < 4; y++) for (let x = 0; x < 12; x++) px(bx + x, by + y, x < 3 ? '#c8b89a' : y === 0 || y === 3 ? '#5a3a2a' : '#8a4a3a');
+    } else if (r.type === 'fight') {
+      const pickD = rf(), d = r.doors;
+      if (pickD < 0.3) mosaic(14 + R(6), 10 + R(4));
+      else if (pickD < 0.55 && d.w && d.e) runner('h');
+      else if (pickD < 0.55 && d.n && d.s) runner('v');
+      else if (pickD < 0.7) runeCircle(14 + R(6), false);
+    }
+    // Scattered details, by the floor's element.
+    const nCracks = 2 + R(4);
+    for (let k = 0; k < nCracks; k++) { // cracks: a little jagged line with a branch
+      let x = T + 4 + rf() * (LW - 2 * T - 8), y = T + 4 + rf() * (LH - 2 * T - 8);
+      const n = 4 + R(5); let a = rf() * Math.PI * 2;
+      for (let i = 0; i < n; i++) { px(x, y, carve); a += (rf() - 0.5) * 1.2; x += Math.cos(a); y += Math.sin(a); if (i === 2 && rf() < 0.6) { px(x + 1, y + 1, carve2); px(x + 2, y + 2, carve2); } }
+    }
+    const spot = () => [T + 3 + rf() * (LW - 2 * T - 6), T + 3 + rf() * (LH - 2 * T - 6)];
+    const bone = '#d8ccb4', boneD = '#9a8e78';
+    const nBones = el === 'shadow' || el === 'poison' ? 3 + R(3) : R(3);
+    for (let k = 0; k < nBones; k++) {
+      const [x, y] = spot();
+      if (rf() < 0.35) { px(x, y, bone); px(x + 1, y, bone); px(x + 2, y, bone); px(x, y + 1, bone); px(x + 1, y + 1, carve); px(x + 2, y + 1, bone); px(x + 1, y + 2, boneD); } // a little skull
+      else { const len = 3 + R(3), dx = rf() < 0.5 ? 1 : 0, dy = 1 - dx; for (let i = 0; i < len; i++) px(x + dx * i, y + dy * i, i === 0 || i === len - 1 ? boneD : bone); } // a bone
+    }
+    // Pebbles and rubble from the walls.
+    for (let k = 0; k < 6 + R(6); k++) { const [x, y] = spot(); px(x, y, C.lighten(col.wall, 0.1)); if (rf() < 0.4) px(x + 1, y, C.darken(col.wall, 0.2)); }
+    // The element's own touch.
+    const tuft = (x, y, c1, c2) => { px(x, y, c1); px(x - 1, y - 1, c2); px(x + 1, y - 1, c2); px(x, y - 2, c1); };
+    if (el === 'nature' || el === 'poison' || el === 'earth') { // moss and grass, thickest along the walls
+      const g1 = el === 'poison' ? '#4a8a2a' : el === 'earth' ? '#6a7a2a' : '#3a8a3a', g2 = el === 'poison' ? '#7ad83a' : el === 'earth' ? '#9aa840' : '#5ab84a';
+      for (let k = 0; k < 14 + R(10); k++) { const edge = R(4), t = rf(); const x = edge < 2 ? T + 2 + t * (LW - 2 * T - 4) : edge === 2 ? T + 2 + rf() * 6 : LW - T - 3 - rf() * 6; const y = edge === 0 ? T + 3 + rf() * 5 : edge === 1 ? LH - T - 2 - rf() * 5 : T + 3 + t * (LH - 2 * T - 6); tuft(x, y, g1, g2); }
+    } else if (el === 'ice') { // frost crystals
+      for (let k = 0; k < 8 + R(6); k++) { const [x, y] = spot(); px(x, y, '#cdeeff'); px(x - 1, y, '#8fc8e0'); px(x + 1, y, '#8fc8e0'); px(x, y - 1, '#8fc8e0'); px(x, y + 1, '#8fc8e0'); }
+    } else if (el === 'fire' || el === 'lightning') { // scorch marks
+      for (let k = 0; k < 3 + R(3); k++) { const [x, y] = spot(); for (let i = 0; i < 18; i++) px(x + (rf() - 0.5) * 7, y + (rf() - 0.5) * 5, C.darken(col.floor, 0.45)); if (el === 'fire') px(x, y, '#c84a1a'); }
+    } else if (el === 'shadow' || el === 'light') { // glowing glyphs set in the floor
+      for (let k = 0; k < 4 + R(3); k++) { const [x, y] = spot(); const c = el === 'light' ? '#e8d8a0' : '#6a4aa8'; px(x, y, c); px(x + 2, y, c); px(x + 1, y + 1, c); px(x, y + 2, c); px(x + 2, y + 2, c); }
+    }
+    // Cobwebs in a corner or two.
+    const web = 'rgba(220,214,230,0.35)';
+    [[T, T, 1, 1], [LW - T - 1, T, -1, 1]].forEach(([x0, y0, sx, sy]) => {
+      if (rf() < 0.5) return;
+      for (let i = 0; i < 6; i++) { px(x0 + sx * i, y0 + sy * (5 - i), web); }
+      for (let i = 0; i < 4; i++) px(x0 + sx * i, y0 + sy * i, web);
+      px(x0 + sx * 2, y0 + sy, web); px(x0 + sx, y0 + sy * 2, web);
+    });
+    // Banners and skull niches on the top wall, between the torches and away from the door.
+    const torchX = new Set((r.torches || []).filter(([, ty]) => ty === 0).map(([tx]) => tx));
+    const bannerC = C.mix(col.accent, '#000000', 0.35), bannerT = C.mix(col.accent, '#ffffff', 0.15);
+    for (const tx of [2, 5, 9, 12]) {
+      if (torchX.has(tx) || torchX.has(tx - 1) || torchX.has(tx + 1) || rf() < 0.45) continue;
+      const X = tx * T + 1, Y = 1;
+      if (rf() < 0.6) { // a banner
+        g.fillStyle = '#3a2a1a'; g.fillRect(X - 1, Y, 8, 1);
+        g.fillStyle = bannerC; g.fillRect(X, Y + 1, 6, 5); g.fillRect(X, Y + 6, 2, 1); g.fillRect(X + 4, Y + 6, 2, 1);
+        g.fillStyle = bannerT; g.fillRect(X + 2, Y + 2, 2, 2);
+      } else { // a niche with a skull
+        g.fillStyle = C.darken(col.wall, 0.55); g.fillRect(X, Y + 1, 6, 5);
+        g.fillStyle = bone; g.fillRect(X + 1, Y + 2, 4, 2); g.fillRect(X + 2, Y + 4, 2, 1);
+        g.fillStyle = '#1a1420'; g.fillRect(X + 1, Y + 3, 1, 1); g.fillRect(X + 4, Y + 3, 1, 1);
+      }
+    }
   }
   const tileAt2 = (r, tx, ty) => (tx < 0 || ty < 0 || tx >= RW || ty >= RH ? TL.WALL : r.tiles[ty * RW + tx]);
   function hazardColor(th) { return { fire: '#ff5a1a', ice: '#5ab8e0', lightning: '#ffd23a', poison: '#7ad83a', earth: '#c8803a', light: '#ffe9a8', shadow: '#7a4ad8', nature: '#3ab85a' }[th.element] || th.colors.accent; }
