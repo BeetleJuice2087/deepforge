@@ -14,7 +14,9 @@ window.DF = window.DF || {};
     chaser: 'Runs straight at you.', shooter: 'Keeps its distance and shoots.', ambusher: 'Hides until you come close.',
     swarm: 'Comes in a pack.', tank: 'Slow and tough, then charges.', summoner: 'Calls little helpers.', trickster: 'Blinks from place to place.',
   };
-  DF.ABILITIES = ['fire trail', 'splits when hit', 'explodes on death', 'freezes floor', 'heals friends', 'shields', 'poisons', 'pulls you in'];
+  DF.ABILITIES = ['fire trail', 'splits when hit', 'explodes on death', 'freezes floor', 'heals friends', 'shields', 'poisons', 'pulls you in',
+    'revives', 'drains life', 'blinks', 'enrages', 'slows you', 'armoured', 'poison trail', 'stuns', 'steals gold', 'charges', 'calls help',
+    'ring shot', 'regenerates', 'pack hunter', 'reflects', 'burrows', 'slams', 'curses', 'rapid fire', 'mutates'];
   DF.POWERS = ['pierce', 'bounce', 'chain', 'lifesteal', 'burn', 'freeze', 'knockback', 'multishot'];
   DF.POWER_TEXT = {
     pierce: 'Swings send out a blade wave that passes through foes.', bounce: 'Swings send out a blade wave that bounces off walls.',
@@ -56,7 +58,11 @@ window.DF = window.DF || {};
     'swift foes': 'Monsters move faster here.', 'rich veins': 'Twice the gold.', 'healing springs': 'Glowing springs heal you.',
   };
   DF.BODIES = ['walker', 'biped', 'blob', 'ghost', 'bat', 'bird', 'serpent', 'spider', 'bug', 'crab', 'octopus', 'jelly', 'frog', 'flame',
-    'cloud', 'orb', 'spiky', 'mushroom', 'tree', 'flower', 'fish', 'snail', 'bee', 'flutter', 'star', 'horse'];
+    'cloud', 'orb', 'spiky', 'mushroom', 'tree', 'flower', 'fish', 'snail', 'bee', 'flutter', 'star', 'horse',
+    'skeleton', 'zombie', 'goblin', 'orc', 'cultist', 'knight', 'imp', 'demon', 'mimic', 'snake', 'bonebeast', 'golem', 'lizardman', 'troll',
+    'minotaur', 'vampire', 'mummy', 'lich', 'wizard', 'rogue', 'archer', 'spearman', 'shieldbearer', 'medusa', 'gargoyle', 'harpy', 'wraith',
+    'banshee', 'reaper', 'ghoul', 'scorpion', 'beetle', 'centipede', 'worm', 'wasp', 'lobster', 'shark', 'angler', 'mindflayer', 'eyeball',
+    'beholder', 'horror', 'flytrap', 'crystal', 'tentacle', 'slug', 'basilisk', 'blade', 'slime'];
   DF.RARITY = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
   DF.RAR_COLOR = ['#cfc8d2', '#72e07e', '#5aaaff', '#c873ff', '#ffb43a'];
   DF.RAR_MULT = [1, 1.3, 1.65, 2.05, 2.6];

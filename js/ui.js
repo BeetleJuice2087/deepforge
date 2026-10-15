@@ -391,10 +391,10 @@
     let known;
     if (nx && nx.theme) {
       const ready = nx.monsters.filter(Boolean).length === 4 && nx.boss;
-      known = `Next floor: <b>${esc(nx.theme.name)}</b>, freshly invented.${ready ? '' : ' A few of its monsters are still being dreamed up, so any that aren\u2019t ready come from the handmade floors.'}`;
-    } else if (!AI.ready()) known = 'Next floor: one of the handmade floors (the AI is off).';
-    else if (nx && nx.failed) known = 'Next floor: one of the handmade floors (the AI didn\u2019t answer this time).';
-    else known = 'The AI is still dreaming up the next floor. If you go now, you\u2019ll get one of the handmade floors instead.';
+      known = `Next floor: <b>${esc(nx.theme.name)}</b>, freshly invented.${ready ? '' : ' A few of its monsters are still being dreamed up, so any that aren\u2019t ready are made up by the game.'}`;
+    } else if (!AI.ready()) known = 'Next floor: made up by the game itself (the AI is off).';
+    else if (nx && nx.failed) known = 'Next floor: made up by the game itself (the AI didn\u2019t answer this time).';
+    else known = 'The AI is still dreaming up the next floor. If you go now, the game makes one up itself instead.';
     const s = openSheet(`<h2 class="title">Floor ${run.floorN + 1}</h2><p class="sub">${known} Going down restores a quarter of your health.</p>
       <div class="row"><button class="btn primary" data-a="go" data-focus>Descend</button><button class="btn ghost" data-a="stay">Not yet</button></div>`);
     s.onclick = (e) => { const a = e.target.dataset.a; if (a === 'go') { closeSheet(); G.descend(); } if (a === 'stay') closeSheet(); };
@@ -570,6 +570,16 @@
   }
 
   /* ---------- Books ---------- */
+  // A monster's signature ability (from the bestiary, even for ones the AI invented).
+  function special(spec) {
+    const prof = DF.bestiaryFor(spec.name), name = spec.special || (prof && prof.s[0]), text = spec.specialText || (prof && prof.s[1]);
+    return name ? `<p class="special"><b>${esc(name)}</b> ${esc(text || '')}</p>` : '';
+  }
+  function abilitiesOf(spec) {
+    const prof = DF.bestiaryFor(spec.name), list = (spec.abilities || []).slice();
+    if (prof) prof.a.forEach((a) => { if (a !== 'mutates' && !list.includes(a)) list.push(a); });
+    return list.filter((a) => a !== 'mutates');
+  }
   function openBook(tab, back) {
     const m = G.meta;
     const tabs = `<div class="tabs"><button data-t="mon" class="${tab === 'mon' ? 'on' : ''}">Monsters</button><button data-t="item" class="${tab === 'item' ? 'on' : ''}">Items</button><button data-t="rec" class="${tab === 'rec' ? 'on' : ''}">Recipes</button></div>`;
@@ -578,9 +588,9 @@
       const list = Object.values(m.books.mon);
       body = list.length ? `<ul class="book">${list.slice().reverse().map(({ spec, kills }) => `
         <li><img class="pix" src="${DF.bigPicture('monster', spec, 5)}" alt=""><div><h3>${esc(spec.name)}${spec.boss ? ' <span class="tag boss">Boss</span>' : ''}</h3>
-        <p>${esc(spec.description)}</p>
+        <p>${esc(spec.description)}</p>${special(spec)}
         <p class="chips"><span class="chip" style="--c:${DF.EL_COLOR[spec.element]}">${spec.element}</span><span class="chip weak" style="--c:${DF.EL_COLOR[spec.weakness]}">weak to ${spec.weakness}</span>
-        <span class="chip plain">${esc(DF.BEHAVIOUR_TEXT[spec.behaviour] || '')}</span>${(spec.abilities || []).map((a) => `<span class="chip plain">${a}</span>`).join('')}</p>
+        <span class="chip plain">${esc(DF.BEHAVIOUR_TEXT[spec.behaviour] || '')}</span>${abilitiesOf(spec).map((a) => `<span class="chip plain" title="${esc(DF.ABILITY_TEXT[a] || '')}">${esc(a)}</span>`).join('')}</p>
         <p class="kills">${kills ? `Defeated ${kills}` : 'Not defeated yet'}</p></div></li>`).join('')}</ul>` : '<p class="empty-book">Monsters you meet are written here.</p>';
     } else if (tab === 'item') {
       const list = Object.values(m.books.item);
@@ -636,7 +646,7 @@
       <ul class="statgrid">
         ${tile(fmtTime(st.playSecs), 'time in the dungeon')}${tile(fmtDist(st.walked), 'walked')}${tile(fmt(st.descents), 'stairs taken')}
         ${tile(fmt(st.rooms), 'rooms cleared')}${tile(fmt(st.chests), 'chests opened')}${tile(fmt(st.mimics), 'mimics found')}
-        ${tile(fmt(st.rests), 'campfire rests')}${tile(fmt(st.rerolls), 'floors rerolled')}${tile(floors ? pct(st.floorsAI, floors) : '\u2014', 'floors dreamed by the AI', `${fmt(st.floorsAI)} AI, ${fmt(st.floorsHand)} handmade`)}
+        ${tile(fmt(st.pots), 'pots and crates smashed')}${tile(fmt(st.rests), 'campfire rests')}${tile(fmt(st.rerolls), 'floors rerolled')}${tile(floors ? pct(st.floorsAI, floors) : '\u2014', 'floors dreamed by the AI', `${fmt(st.floorsAI)} by the AI, ${fmt(st.floorsHand)} made by the game`)}
       </ul>
       <h3 class="stat-h">Treasure</h3>
       <ul class="statgrid">
@@ -669,11 +679,11 @@
         <div class="seg">${[['tracks', 'Soundtrack'], ['synth', 'Made on the spot']].map(([v, l]) => `<label><input type="radio" name="m-kind" value="${v}" ${SND.kind === v ? 'checked' : ''}> ${l}</label>`).join('')}</div>
         <details><summary>Music credits</summary><ul class="credits">${DF.MUSIC_CREDITS.map((c) => `<li><small>${esc(c.use)}</small><b>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a>` : esc(c.title)}</b>${c.by ? ` by ${esc(c.by)}` : ''}${c.license ? ` <em>${esc(c.license)}</em>` : ''}</li>`).join('')}</ul><p class="note">Tracks were converted to MP3 and their volumes evened out for the game. Licences: <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC-BY 4.0</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC-BY-SA 4.0</a>, <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a>.</p></details></section>
       <section class="set"><h3>The Deep (AI)</h3>
-        <p class="note">It invents each floor, its monsters, the treasure and everything you forge. When it can't answer in time, the game uses its handmade maps instead.</p>
+        <p class="note">It invents each floor, its monsters, the treasure and everything you forge. When it's off or can't answer in time, the game makes up floors itself, so there's always something new.</p>
         <div class="seg">${[['cloud', 'Online'], ['device', 'On this device'], ['off', 'Off']].map(([v, l]) => `<label><input type="radio" name="ai-mode" value="${v}" ${st.mode === v ? 'checked' : ''} ${v === 'device' && !AI.hasGPU() ? 'disabled' : ''}> ${l}</label>`).join('')}</div>
         ${st.mode === 'cloud' ? `<label class="field">Worker address<input type="url" id="ai-url" placeholder="${esc(AI.defaultUrl || 'https://deepforge.your-name.workers.dev')}" value="${esc(st.url || '')}" spellcheck="false" autocomplete="off"></label>
           <div class="row left"><button class="btn small" data-a="test">Test connection</button><span id="ai-test-out" class="note"></span></div>
-          ${!AI.url() ? '<p class="note">Online needs your Deepforge Worker. Until it’s set, floors come from the handmade maps.</p>' : ''}` : ''}
+          ${!AI.url() ? '<p class="note">Online needs your Deepforge Worker. Until it’s set, the game makes up floors itself.</p>' : ''}` : ''}
         ${dev ? `<label class="field">Model<select id="ai-model">${Object.entries(AI.LOCAL_MODELS).filter(([k]) => !(AI.IS_MOBILE && k === 'better')).map(([k, mm]) => `<option value="${k}" ${st.model === k ? 'selected' : ''}>${mm.label} (${mm.size})</option>`).join('')}</select></label>
           <p class="note">${devStatus}</p><div class="bar"><i style="width:${pct}%"></i></div>
           <div class="row left"><button class="btn small" data-a="dl" ${L.loading || (L.engine && L.model === id) ? 'disabled' : ''}>Download now</button>${L.cached[id] ? '<button class="btn small ghost" data-a="rm">Remove download</button>' : ''}</div>` : ''}

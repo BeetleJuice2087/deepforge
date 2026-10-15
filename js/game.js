@@ -20,7 +20,7 @@
   function defaultMeta() {
     return { v: 1, gold: 0, up: { vit: 0, str: 0, tough: 0, fort: 0, satchel: 0 }, books: { mon: {}, item: {}, recipes: [] },
       stats: { runs: 0, deepest: 0, kills: 0, forged: 0, bosses: 0, goldTotal: 0, elites: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, hits: 0, crits: 0, weakHits: 0,
-        swings: 0, bashes: 0, potions: 0, chests: 0, mimics: 0, rooms: 0, descents: 0, rerolls: 0, items: 0, legendaries: 0, walked: 0, playSecs: 0, floorsAI: 0, floorsHand: 0, bought: 0, rests: 0, scrolls: 0, spells: 0 },
+        swings: 0, bashes: 0, potions: 0, chests: 0, mimics: 0, rooms: 0, descents: 0, rerolls: 0, items: 0, legendaries: 0, walked: 0, playSecs: 0, floorsAI: 0, floorsHand: 0, bought: 0, rests: 0, scrolls: 0, spells: 0, pots: 0 },
       records: { killedBy: {}, elemKills: {}, bigHit: null, bestRun: null, longestRun: 0, bestItem: null }, run: null, tips: {} };
   }
   let meta = defaultMeta();
@@ -124,7 +124,7 @@
     const k = norm(spec.name);
     if (meta.books.mon[k]) return;
     meta.books.mon[k] = { spec: { name: spec.name, description: spec.description, colors: spec.colors, element: spec.element, weakness: spec.weakness,
-      tier: spec.tier, behaviour: spec.behaviour, abilities: spec.abilities, body: spec.body || '', boss: !!spec.boss, rows: spec.rows }, kills: 0, theme: run ? run.content.theme.name : '' };
+      tier: spec.tier, behaviour: spec.behaviour, abilities: spec.abilities, body: spec.body || '', boss: !!spec.boss, special: spec.special || '', specialText: spec.specialText || '' }, kills: 0, theme: run ? run.content.theme.name : '' };
     saveMeta();
     DF.UI.discovery('monster', spec);
   }
@@ -166,7 +166,7 @@
   /* ================= Floors the AI dreams up ahead of time ================= */
   const tierFor = (n) => Math.min(5, 1 + Math.floor((n - 1) / 3));
   function newContent(n) {
-    return { n, tier: tierFor(n), seed: rint(window.DF_PROMPTS.THEME_SEEDS), theme: null, monsters: [null, null, null, null], boss: null, loot: Array(6).fill(null), prio: 2, dead: false, failed: false };
+    return { n, tier: tierFor(n), seed: rint(window.DF_PROMPTS.THEME_SEEDS), gseed: Math.floor(Math.random() * 1e9), theme: null, monsters: [null, null, null, null], boss: null, loot: Array(6).fill(null), prio: 2, dead: false, failed: false };
   }
   // Ask the AI for a whole floor, one piece at a time (later pieces know the earlier ones).
   function dream(c) {
@@ -197,12 +197,13 @@
     });
   }
   const contentReady = (c) => c.failed || (c.theme && c.monsters.filter(Boolean).length >= 3 && c.boss);
-  // Turn whatever is ready into a full floor, filling gaps from the handmade pool.
+  // Turn whatever is ready into a full floor. Gaps are filled by the floor generator (built around the AI's
+  // theme when there is one); now and then a whole floor comes from the six handmade ones instead.
   function materialize(c, usedFallbacks) {
     const pool = DF.FALLBACK_THEMES;
-    let fb;
-    if (c.theme) fb = pool.find((t) => t.element === c.theme.element) || pool[c.seed % pool.length];
-    else { const free = pool.filter((t) => !usedFallbacks.includes(t.name)); fb = (free.length ? free : pool)[c.seed % (free.length || pool.length)]; }
+    const gen = DF.GEN.floor(c.gseed != null ? c.gseed : c.seed + ':' + c.n, c.n, c.theme || null);
+    let fb = gen;
+    if (!c.theme) { const free = pool.filter((t) => !usedFallbacks.includes(t.name)); if (free.length && rnd() < 0.2) fb = free[c.seed % free.length]; }
     const theme = c.theme ? Object.assign({}, c.theme) : { name: fb.name, description: fb.description, element: fb.element, rule: fb.rule, colors: fb.colors };
     // Floors from the handmade maps get returning monsters too (so your AI inventions turn up even offline).
     if (!c.planned) { const plan = planReturning(c, theme.element); plan.picks.forEach((s, i) => { if (s && !c.monsters[i]) c.monsters[i] = s; }); if (plan.boss && !c.boss) c.boss = plan.boss; }
@@ -214,7 +215,7 @@
       return fb.loot.find((x, k) => x.type === type && k % 2 === (i < 3 ? 0 : 1)) || fb.loot.find((x) => x.type === type) || fb.loot[i % 4];
     });
     const fromAI = { theme: !!c.theme, monsters: c.monsters.filter(Boolean).length, boss: !!c.boss };
-    return { n: c.n, theme, monsters, boss, loot, fromAI, fallback: c.theme ? '' : fb.name };
+    return { n: c.n, theme, monsters, boss, loot, fromAI, fallback: c.theme || fb.generated ? '' : fb.name };
   }
 
   /* ================= Making a floor ================= */
@@ -287,6 +288,65 @@
     room.tiles = t;
     room.springLeft = 0.45; // a spring can heal this share of your max health
     room.torches = pickTorches(room);
+    placeProps(room);
+  }
+  /* ---- Pots and crates: smash them for a few coins, sometimes a heart ----
+     They sit along walls and blocks, never in a doorway lane, and never where they'd cut off a path. */
+  function placeProps(room) {
+    room.props = [];
+    const want = { fight: 1 + rint(4), start: 2 + rint(2), treasure: 1 + rint(2), boss: rint(3), forge: rint(2) }[room.type] || 0;
+    if (!want) return;
+    const t = room.tiles, special = room.type !== 'fight';
+    const free = (x, y) => t[y * RW + x] === TL.FLOOR && !room.props.some((p) => p.tx === x && p.ty === y);
+    const reachable = () => { // floor tiles reachable from the middle, treating props as solid
+      const seen = new Uint8Array(RW * RH), q = [5 * RW + 7]; seen[q[0]] = 1; let n = 0;
+      while (q.length) { const k = q.pop(), x = k % RW, y = (k / RW) | 0; n++;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 1 || ny < 1 || nx > RW - 2 || ny > RH - 2) continue; const nk = ny * RW + nx; if (seen[nk]) continue; const tt = t[nk]; if ((tt === TL.FLOOR || tt === TL.HAZ || tt === TL.SPRING) && !room.props.some((p) => p.tx === nx && p.ty === ny)) { seen[nk] = 1; q.push(nk); } } }
+      return n;
+    };
+    const cands = [];
+    for (let y = 1; y < RH - 1; y++) for (let x = 1; x < RW - 1; x++) {
+      if (!free(x, y) || x === 7 || y === 5) continue; // keep the door lanes clear
+      if (special && x >= 4 && x <= 10 && y >= 2 && y <= 8) continue; // keep the middle of special rooms clear
+      if ((x <= 2 && Math.abs(y - 5) <= 1) || (x >= RW - 3 && Math.abs(y - 5) <= 1) || (y <= 2 && Math.abs(x - 7) <= 1) || (y >= RH - 3 && Math.abs(x - 7) <= 1)) continue; // or just inside a door
+      const walls = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => { const tt = t[(y + dy) * RW + x + dx]; return tt === TL.WALL || tt === TL.BLOCK; }).length;
+      if (walls) cands.push([x, y, walls]);
+    }
+    let base = reachable(), tries = 0;
+    while (room.props.length < want && cands.length && tries++ < 60) {
+      // Corners first: they look most natural there.
+      cands.sort((a, b) => b[2] - a[2] + (rnd() - 0.5) * 1.5);
+      const [x, y] = cands.shift();
+      if (!free(x, y)) continue;
+      const kind = rnd() < 0.6 ? 'pot' : 'crate';
+      room.props.push({ tx: x, ty: y, kind, v: rint(3) });
+      const now = reachable();
+      if (now !== base - 1) { room.props.pop(); continue; } // it would cut something off: put it somewhere else
+      base = now;
+      // Pots like company: sometimes a second one right next to it.
+      if (room.props.length < want && rnd() < 0.5) {
+        const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy]).find(([nx, ny]) => cands.some((c) => c[0] === nx && c[1] === ny) && free(nx, ny));
+        if (nb) { room.props.push({ tx: nb[0], ty: nb[1], kind: rnd() < 0.7 ? kind : (kind === 'pot' ? 'crate' : 'pot'), v: rint(3) }); const n2 = reachable(); if (n2 !== base - 1) room.props.pop(); else base = n2; }
+      }
+    }
+  }
+  const propAt = (tx, ty) => room && room.props && room.props.find((p) => !p.broken && p.tx === tx && p.ty === ty);
+  function breakProp(p) {
+    if (p.broken) return;
+    p.broken = true; bump('pots');
+    const x = p.tx * T + T / 2, y = p.ty * T + T / 2;
+    const cols = p.kind === 'pot' ? ['#b0603a', '#d88a5a', '#6a3420'] : ['#8a6034', '#b08050', '#4a3018'];
+    for (let i = 0; i < 14; i++) fx.particles.push({ x: x + (rnd() - 0.5) * 4, y: y - 2 + (rnd() - 0.5) * 4, vx: (rnd() - 0.5) * 70, vy: -20 - rnd() * 40, life: 0.5, max: 0.5, color: cols[i % 3], size: 1, glow: false, g: 160 });
+    SND.smash ? SND.smash(x / LW, p.kind) : SND.hit(x / LW);
+    const coins = 1 + rint(3), mult = run.content.theme.rule === 'rich veins' ? 2 : 1;
+    for (let i = 0; i < coins; i++) room.pickups.push({ kind: 'gold', value: mult, x: x + (rnd() - 0.5) * 6, y: y + 2 + (rnd() - 0.5) * 4, vy: -25 - rnd() * 20, z: 0 });
+    const low = P.hp / stats().maxHp < 0.4; // running low? hearts turn up far more often
+    if (rnd() < (low ? 0.4 : 0.15)) room.pickups.push({ kind: 'heart', x: x + (rnd() - 0.5) * 4, y: y + 3, vy: -30, z: 0 });
+  }
+  // Break any pot or crate within reach of a point (a swing, a bash, a blast).
+  function breakPropsNear(x, y, reach, test) {
+    if (!room || !room.props) return;
+    for (const p of room.props) { if (p.broken) continue; const px = p.tx * T + T / 2, py = p.ty * T + T / 2; if (Math.hypot(px - x, py - y) <= reach + 3 && (!test || test(px, py))) breakProp(p); }
   }
   function pickTorches(room) {
     const spots = [[3, 0], [11, 0], [0, 2], [RW - 1, 8], [0, 8], [RW - 1, 2], [3, RH - 1], [11, RH - 1]];
@@ -300,7 +360,7 @@
   /* ================= Game state ================= */
   let run = null, floor = null, room = null;
   const P = { x: 60, y: 44, vx: 0, vy: 0, r: 2.5, fx: 1, fy: 0, dir: 1, hp: 30, inv: 0, cd: 0, bashCd: 0, swing: null, bash: null, poison: 0, poisonTick: 0,
-    walkT: 0, hazT: 0, springT: 0, slowT: 0, flash: 0, dead: false, spellCd: 0, ward: 0, roll: null, turrets: [] };
+    walkT: 0, hazT: 0, springT: 0, slowT: 0, flash: 0, dead: false, spellCd: 0, ward: 0, roll: null, turrets: [], burnT: 0, burnTick: 0, rootT: 0, curseT: 0 };
   const fx = { particles: [], texts: [], projectiles: [], shake: 0, fade: 0, fadeDir: 0, fadeCb: null, hitstop: 0, slowmo: 0 };
   const hold = new Set(); // reasons the game is paused (menus, cards, the forge)
   let action = null; // the context button: open a chest, forge, descend
@@ -322,6 +382,7 @@
     }
     s.speed = Math.min(s.speed, 70);
     s.luckF = Math.min(0.6, s.luck / 100);
+    if (P.curseT > 0) s.attack = Math.max(1, Math.round(s.attack * 0.7)); // a mummy's curse
     return s;
   }
 
@@ -370,7 +431,7 @@
       rooms: floor.rooms.map((r) => ({
         gx: r.gx, gy: r.gy, type: r.type, doors: r.doors, visited: r.visited, seen: r.seen, cleared: r.cleared, dist: r.dist,
         tiles: r.tiles ? Array.from(r.tiles) : null, torches: r.torches, springLeft: r.springLeft,
-        chest: r.chest || null, altar: r.altar || null, stairs: r.stairs || null, shop: r.shop || null, fire: r.fire || null,
+        chest: r.chest || null, altar: r.altar || null, stairs: r.stairs || null, shop: r.shop || null, fire: r.fire || null, props: r.props || [],
         pickups: r.pickups.map((p) => ({ kind: p.kind, x: p.x, y: p.y, value: p.value, item: p.item, spell: p.spell, charges: p.charges })),
         enemies: r.enemies.filter((e) => !e.dead).map((e) => ({ spec: e.spec, x: e.x, y: e.y, hp: e.hp, elite: e.elite, boss: e.boss, child: e.child, minion: e.minion, hidden: e.hidden, mimicItem: e.mimicItem || null })),
       })),
@@ -413,7 +474,7 @@
       floor.rooms.forEach((r) => buildTiles(r, run.content.theme));
       floor.rooms.forEach((r) => { r.bg = null; });
     }
-    P.dead = false; P.hp = Math.min(hp, stats().maxHp); P.mana = stats().maxMana; P.novaCd = 0; P.castT = 0; P.inv = 1; P.poison = 0; P.swing = null; P.bash = null; P.vx = P.vy = 0; P.cd = 0; P.bashCd = 0; P.spellCd = 0; P.ward = 0; P.roll = null; P.turrets = [];
+    P.dead = false; P.hp = Math.min(hp, stats().maxHp); P.mana = stats().maxMana; P.novaCd = 0; P.castT = 0; P.inv = 1; P.poison = 0; P.swing = null; P.bash = null; P.vx = P.vy = 0; P.cd = 0; P.bashCd = 0; P.spellCd = 0; P.ward = 0; P.roll = null; P.turrets = []; P.burnT = 0; P.rootT = 0; P.curseT = 0;
     fx.projectiles.length = 0; fx.particles.length = 0; fx.texts.length = 0;
     meta.stats.deepest = Math.max(meta.stats.deepest, run.floorN);
     if (!saved) bump(run.content.fromAI && run.content.fromAI.theme ? 'floorsAI' : 'floorsHand');
@@ -560,6 +621,7 @@
     const out = [], ex = from ? DOOR_TILE[from] : [7, 5];
     for (let y = 2; y < RH - 2; y++) for (let x = 2; x < RW - 2; x++) {
       if (r.tiles[y * RW + x] !== TL.FLOOR) continue;
+      if (r.props && r.props.some((p) => !p.broken && p.tx === x && p.ty === y)) continue;
       if (Math.hypot(x - ex[0], y - ex[1]) < minDist) continue;
       out.push([x * T + T / 2, y * T + T / 2]);
     }
@@ -607,13 +669,20 @@
       scale, flying: FLYERS.has(body), w: sprite.w * scale, h: sprite.h * scale, dir: x > P.x ? -1 : 1, t: rnd() * 2, t2: rnd() * 3, t3: rnd() * 4, state: 'move',
       hidden: false, shield: 0, burn: 0, burnTick: 0, slow: 0, stun: 0, flash: 0, trailT: 0, spawnT: 0.5, wob: rnd() * 6 };
     e.r = Math.max(2.5, Math.min(sprite.w, sprite.h) * scale / 2 - 0.5);
+    // A creature from the bestiary keeps its signature ability, even when the AI invented it ("Cinder Skeleton" still gets back up).
+    const prof = DF.bestiaryFor(spec.name);
+    if (prof && !o.minion) prof.a.forEach((x) => { if (e.abil.size < 3 && DF.ABILITIES.includes(x)) e.abil.add(x); });
+    if (e.abil.has('mutates')) { // Chaos Spawn: two random powers, different every floor
+      e.abil.delete('mutates'); const r = DF.seeded(spec.name + '#' + run.floorN), pool = DF.ABILITIES.filter((x) => !['mutates', 'splits when hit'].includes(x));
+      for (let k = 0; k < 2; k++) e.abil.add(pool[r(pool.length)]);
+    }
     const hpBase = [10, 18, 30][tier - 1] * (1 + 0.35 * (n - 1));
     let hp = hpBase, dmg = [3, 4, 6][tier - 1] * (1 + 0.2 * (n - 1)), spd = [27, 24, 20][tier - 1];
     if (e.beh === 'swarm') { hp *= 0.45; dmg *= 0.7; spd = 32; }
     if (e.beh === 'tank') { hp *= 2; spd = 13; }
     if (e.beh === 'shooter' || e.beh === 'summoner') spd = 20;
     if (e.beh === 'ambusher') { e.hidden = true; }
-    if (o.elite) { hp *= 2.5; dmg *= 1.3; const extra = DF.ABILITIES.filter((a) => !e.abil.has(a) && a !== 'splits when hit'); e.abil.add(pick(extra)); }
+    if (o.elite) { hp *= 2.5; dmg *= 1.3; const extra = DF.ABILITIES.filter((a) => !e.abil.has(a) && !['splits when hit', 'mutates'].includes(a)); e.abil.add(pick(extra)); }
     if (o.boss) { hp = 90 * (1 + 0.42 * (n - 1)) * (spec.named ? 1.3 : 1); dmg = 6 * (1 + 0.2 * (n - 1)); spd = e.beh === 'tank' ? 15 : 19; e.r = Math.max(e.r, 5); }
     // Past floor 10 monsters toughen faster: +6% health and +9% damage per floor, compounding.
     const past = Math.max(0, n - 10);
@@ -622,7 +691,7 @@
     const bonus = Math.min(2, Math.floor((n - 1) / 5));
     if (bonus && !o.minion) {
       const r = DF.seeded(spec.name + '#' + n);
-      const pool = DF.ABILITIES.filter((a) => !e.abil.has(a) && !(a === 'splits when hit' && (o.boss || o.child)));
+      const pool = DF.ABILITIES.filter((a) => !e.abil.has(a) && a !== 'mutates' && !(o.boss && a === 'burrows') && !(a === 'splits when hit' && (o.boss || o.child)));
       for (let k = 0; k < bonus && pool.length && e.abil.size < 4; k++) e.abil.add(pool.splice(r(pool.length), 1)[0]);
     }
     if (o.child) { hp *= 0.35; e.splitDone = true; }
@@ -640,6 +709,7 @@
     if (t === TL.WALL || t === TL.BLOCK || t === TL.BRAZIER) return true;
     if (t === TL.PIT) return !e.flying;
     if (isDoorTile(tx, ty)) return e !== P || room.locked;
+    if (propAt(tx, ty)) return true;
     return false;
   }
   function hits(e, x, y) {
@@ -679,7 +749,7 @@
       const a = rnd() * Math.PI * 2, d = minD + rnd() * (maxD - minD), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
       const tx = Math.floor(x / T), ty = Math.floor(y / T);
       if (tx < 1 || ty < 1 || tx > RW - 2 || ty > RH - 2) continue;
-      if (room.tiles[ty * RW + tx] === TL.FLOOR) return { x: tx * T + T / 2, y: ty * T + T / 2 };
+      if (room.tiles[ty * RW + tx] === TL.FLOOR && !propAt(tx, ty)) return { x: tx * T + T / 2, y: ty * T + T / 2 };
     }
     return null;
   }
@@ -698,6 +768,8 @@
   function hurtPlayer(dmg, src, kind) {
     if (P.dead || P.inv > 0 || (P.bash && P.bash.t > 0)) return;
     const s = stats();
+    const foe = src && (src.abil ? src : src.owner && src.owner.abil ? src.owner : null);
+    if (foe && foe.abil.has('pack hunter')) { const pack = room.enemies.filter((x) => x !== foe && !x.dead && x.spec.name === foe.spec.name && dist(x, foe) < 50).length; dmg *= 1 + 0.25 * pack; }
     const d = Math.max(1, Math.round(dmg * 12 / (12 + s.defence)));
     P.hp -= d; P.inv = 0.8; P.flash = 0.15; fx.shake = Math.max(fx.shake, 0.25); fx.hitstop = 0.05;
     bump('dmgTaken', d);
@@ -707,8 +779,27 @@
     SND.hurt();
     if (src && src.x != null) { const a = Math.atan2(P.y - src.y, P.x - src.x); P.vx += Math.cos(a) * 90; P.vy += Math.sin(a) * 90; P.knockT = 0.12; }
     if (kind === 'poison') P.poison = 3;
+    if (foe && P.hp > 0) onHitBy(foe, d);
     if (P.hp <= 0) { P.hp = 0; die(); }
     updateHUD();
+  }
+  // What a monster's hit does besides damage: its abilities, then a touch of its element.
+  function onHitBy(e, d) {
+    const a = e.abil, by = e.spec.name;
+    if (a.has('drains life') && !e.dead) { const got = Math.min(e.maxHp - e.hp, Math.max(1, Math.round(d * 1.5))); if (got > 0) { e.hp += got; floatText(e.x, e.y - e.h - 4, '+' + got, '#72e07e'); if (e.boss) DF.UI.bossBar(e); } burst(P.x, P.y - 3, '#c83a5a', 6, 25, true); }
+    if (a.has('slows you')) { P.slowT = Math.max(P.slowT, 1.6); burst(P.x, P.y - 2, '#bfefff', 5, 15, true); }
+    if (a.has('stuns') && rnd() < 0.55 && !(P.rootT > 0)) { P.rootT = 0.7; floatText(P.x, P.y - 12, 'Held!', '#ffe14a'); }
+    if (a.has('curses')) { if (!(P.curseT > 0)) floatText(P.x, P.y - 12, 'Cursed!', '#b48bff'); P.curseT = 5; updateHUD(true); }
+    if (a.has('steals gold') && meta.gold > 0) { const take = Math.min(meta.gold, 2 + run.floorN); meta.gold -= take; e.stolen = (e.stolen || 0) + take; floatText(P.x, P.y - 14, '-' + take + 'g', '#ffcf4a', true); SND.coin(P.x / LW); updateHUD(); }
+    // The element adds a little something, now and then.
+    if (rnd() < 0.3) {
+      const el = e.spec.element;
+      if (el === 'fire') { P.burnT = Math.max(P.burnT, 2); P.burnFrom = by; }
+      else if (el === 'ice') P.slowT = Math.max(P.slowT, 1);
+      else if (el === 'lightning') P.rootT = Math.max(P.rootT, 0.3);
+      else if (el === 'poison' && !a.has('poisons')) { P.poison = Math.max(P.poison, 1.5); P.poisonFrom = by; }
+      else if (el === 'shadow' && !e.dead && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + Math.max(1, Math.round(d * 0.5)));
+    }
   }
   function healPlayer(n, quiet) {
     const s = stats(), before = P.hp;
@@ -876,6 +967,7 @@
     if (sp.id === 'frost') {
       for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; fx.particles.push({ x: P.x, y: P.y - 3, vx: Math.cos(a) * 80, vy: Math.sin(a) * 80, life: 0.4, max: 0.4, color: k % 2 ? '#ffffff' : col, size: 1, glow: true, g: 0 }); }
       room.enemies.slice().forEach((e) => { if (!e.hidden && dist(P, e) < 32 + e.r) damageEnemy(e, atk * 1.1, { from: P, knock: 70, element: 'ice', powers: ['freeze'] }); });
+      breakPropsNear(P.x, P.y, 30);
       SND.shield ? SND.shield(P.x / LW) : SND.zap(P.x / LW); fx.shake = Math.max(fx.shake, 0.15);
     } else if (sp.id === 'chain') {
       let from = { x: P.x, y: P.y - 4 }, t = nearestEnemy(120); const hit = new Set();
@@ -956,7 +1048,8 @@
     P.spellCd = Math.max(0, (P.spellCd || 0) - dt); P.ward = Math.max(0, (P.ward || 0) - dt); P.castT = Math.max(0, (P.castT || 0) - dt);
     let mx = input.mx, my = input.my;
     const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
-    let spd = s.speed * (P.slowT > 0 ? 0.55 : 1);
+    let spd = s.speed * (P.slowT > 0 ? 0.55 : 1) * (P.rootT > 0 ? 0 : 1);
+    P.rootT = Math.max(0, P.rootT - dt); P.curseT = Math.max(0, P.curseT - dt);
     P.slowT = Math.max(0, P.slowT - dt);
     if (P.swing) spd *= 0.6;
     const slippery = run.content.theme.rule === 'slippery floors';
@@ -966,6 +1059,7 @@
       if (P.roll.t <= 0) { P.roll = null; P.vx *= 0.3; P.vy *= 0.3; }
     } else if (P.bash && P.bash.t > 0) {
       P.bash.t -= dt; P.vx = P.fx * 175; P.vy = P.fy * 175;
+      breakPropsNear(P.x + P.fx * 4, P.y + P.fy * 4, P.r + 4);
       for (const e of room.enemies) {
         if (P.bash.hit.has(e) || e.hidden || dist(P, e) > P.r + e.r + 3) continue;
         P.bash.hit.add(e);
@@ -1033,7 +1127,11 @@
       if (dist(P, ef) > ef.r + 1) continue;
       if (ef.type === 'fire' && P.hazT <= 0) { P.hazT = 0.6; hurtPlayer(ef.dmg, { from: ef.from }); }
       if (ef.type === 'ice') P.slowT = 0.2;
+      if (ef.type === 'ooze') { if (!(P.poison > 0)) P.poisonFrom = ef.from; P.poison = Math.max(P.poison, 1.5); }
     }
+    if (P.burnT > 0) { P.burnT -= dt; P.burnTick -= dt; if (rnd() < 0.3) fx.particles.push({ x: P.x + (rnd() - 0.5) * 5, y: P.y - 5, vx: 0, vy: -14, life: 0.3, max: 0.3, color: '#ff8a3a', size: 1, glow: true, g: 0 });
+      if (P.burnTick <= 0) { P.burnTick = 0.6; P.hp -= 1; bump('dmgTaken'); P.lastHit = P.burnFrom || 'Fire'; floatText(P.x, P.y - 8, '-1', '#ff9a3a'); if (P.hp <= 0) { P.hp = 0; die(); } updateHUD(); } }
+    if (P.rootT > 0 && rnd() < 0.3) fx.particles.push({ x: P.x + (rnd() - 0.5) * 8, y: P.y - 9, vx: 0, vy: -4, life: 0.3, max: 0.3, color: '#ffe14a', size: 1, glow: true, g: 0 });
     if (P.poison > 0) { P.poison -= dt; P.poisonTick -= dt; if (P.poisonTick <= 0) { P.poisonTick = 0.7; P.hp -= 1; bump('dmgTaken'); P.lastHit = P.poisonFrom || 'Poison'; floatText(P.x, P.y - 8, '-1', '#a6ff4a'); if (P.hp <= 0) { P.hp = 0; die(); } updateHUD(); } }
     // Leaving through an open door.
     if (!room.locked) {
@@ -1097,6 +1195,7 @@
       sw.hit.add(e);
       damageEnemy(e, s.attack * feel.mult, { from: P, knock: 55, powers: w ? w.powers : [], element: w ? w.element : 'none', luck: s.luckF });
     }
+    breakPropsNear(P.x, P.y - 2, sw.range, (px, py) => { let da = Math.atan2(py - (P.y - 2), px - P.x) - sw.ang; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2; return Math.abs(da) <= sw.arc / 2 + 0.3; });
     // Swings knock enemy shots out of the air.
     for (const p of fx.projectiles) {
       if (p.mine || p.dead) continue;
@@ -1116,6 +1215,7 @@
     if (el && el !== 'none') { if (el === e.spec.weakness) { mult = 1.6; tag = 'Weak!'; } else if (el === e.spec.element) mult = 0.6; }
     let crit = false;
     if (o.luck && rnd() < o.luck * 0.6) { crit = true; mult *= 1.8; }
+    if (e.abil.has('armoured') && !o.dot) mult *= 0.6;
     const d = Math.max(1, Math.round(amount * mult));
     bump('dmgDealt', d);
     if (!o.dot) {
@@ -1147,11 +1247,30 @@
       near.forEach((x) => { fx.particles.push({ bolt: true, x: e.x, y: e.y - 2, x2: x.x, y2: x.y - 2, life: 0.15, max: 0.15, color: '#ffe14a' }); damageEnemy(x, amount * 0.45, { chained: true, from: e, element: 'lightning' }); });
       if (near.length) SND.zap(e.x / LW);
     }
+    if (e.hp > 0 && !o.dot) afterHit(e, o);
     if (e.hp <= 0) killEnemy(e);
     if (e.boss) DF.UI.bossBar(e);
   }
   const chaseCap = () => ((DF.CLASSES[(run && run.cls) || 'knight'] || DF.CLASSES.knight).spd) * 0.82;
-  function reveal(e) { if (!e.hidden) return; e.hidden = false; e.spd *= 1.35; burst(e.x, e.y, '#ffffff', 8, 25); floatText(e.x, e.y - 8, '!', '#ff5a5a', true); }
+  function afterHit(e, o) {
+    const a = e.abil; e.lastHitT = time;
+    if (a.has('reflects') && o.from === P && rnd() < 0.5) hurtPlayer(Math.max(1, Math.round(e.dmg * 0.35)), e);
+    if (a.has('enrages') && !e.enraged && e.hp < e.maxHp * 0.5) {
+      e.enraged = true; e.dmg = Math.round(e.dmg * 1.4); e.spd *= 1.3; floatText(e.x, e.y - e.h - 6, 'Enraged!', '#ff5a3a', true);
+      for (let k = 0; k < 10; k++) burst(e.x, e.y - 3, '#ff3a2a', 1, 35, true);
+    }
+    if (a.has('calls help') && !e.called && e.hp < e.maxHp * 0.5) { e.called = true; floatText(e.x, e.y - e.h - 6, 'Help!', '#ffcf4a', true); summonHelp(e, 2); }
+    if (a.has('blinks') && !(e.blinkT > time) && rnd() < 0.45) {
+      const s = randomFloorNear(P.x - P.fx * 18, P.y - P.fy * 18, 6, 22) || randomFloorNear(P.x, P.y, 16, 34);
+      if (s) { burst(e.x, e.y - 2, '#ffffff', 8, 25, true); e.x = s.x; e.y = s.y; e.vx = e.vy = 0; e.spawnT = 0.15; e.blinkT = time + 2.2; burst(e.x, e.y - 2, '#ffffff', 8, 25, true); SND.blink(e.x / LW); }
+    }
+  }
+  function summonHelp(e, n) {
+    const base = run.content.monsters.slice().sort((a, b) => a.tier - b.tier)[0];
+    for (let k = 0; k < n; k++) { const s = randomFloorNear(e.x, e.y, 8, 20); if (!s) continue; const m = makeEnemy(base, s.x, s.y, { minion: true }); m.owner = e; m.spawnT = 0.5; m.beh = 'chaser'; m.hidden = false; room.enemies.push(m); burst(s.x, s.y, '#b48bff', 8, 25, true); }
+    SND.summon(e.x / LW);
+  }
+  function reveal(e) { if (!e.hidden) return; e.hidden = false; if (e.burrowing > 0) { e.burrowing = 0; burst(e.x, e.y, '#8a6a4a', 8, 25); return; } e.spd *= 1.35; burst(e.x, e.y, '#ffffff', 8, 25); floatText(e.x, e.y - 8, '!', '#ff5a5a', true); }
   function dropGold(x, y, amount) {
     if (run.content.theme.rule === 'rich veins') amount *= 2;
     const coins = Math.min(6, Math.max(1, Math.round(amount / 3)));
@@ -1168,7 +1287,14 @@
   }
   function killEnemy(e) {
     if (e.dead) return;
+    if (e.abil.has('revives') && !e.revived && !e.minion && !e.child) { // Bone Revival: it pulls itself back together, once
+      e.revived = true; e.hp = Math.round(e.maxHp * 0.5); e.spawnT = 1.1; e.flash = 0.2;
+      for (let k = 0; k < 14; k++) burst(e.x, e.y - 3, k % 2 ? '#e8dcc0' : '#ffffff', 1, 40);
+      floatText(e.x, e.y - e.h - 6, 'It rises!', '#e8dcc0', true); SND.bash(e.x / LW); if (e.boss) DF.UI.bossBar(e);
+      return;
+    }
     e.dead = true;
+    if (e.stolen) { for (let i = 0; i < Math.min(8, e.stolen); i++) room.pickups.push({ kind: 'gold', value: Math.max(1, Math.round(e.stolen / Math.min(8, e.stolen))), x: e.x + (rnd() - 0.5) * 8, y: e.y + (rnd() - 0.5) * 6, vy: -25, z: 0 }); floatText(e.x, e.y - e.h - 6, 'Your gold!', '#ffcf4a'); }
     const col = (e.spec.colors && e.spec.colors[0]) || '#ffffff';
     burst(e.x, e.y - 2, col, e.boss ? 40 : 12, e.boss ? 60 : 40);
     burst(e.x, e.y - 2, '#ffffff', 4, 20);
@@ -1221,7 +1347,7 @@
     if (ch.mimic) {
       const th = run.content.theme;
       const spec = { name: 'Mimic Chest', description: 'A treasure chest with teeth.', colors: ['#8a5a32', th.colors.accent, '#3a2010', '#ffffff'], element: th.element,
-        weakness: DF.NATURAL_WEAKNESS[th.element], tier: 2, behaviour: 'chaser', abilities: [], rows: ['.aaaaa.', 'abbbbba', 'adcdcda', 'accccca', 'aaaaaaa'] };
+        weakness: DF.NATURAL_WEAKNESS[th.element], tier: 2, behaviour: 'chaser', abilities: [] };
       bump('chests'); bump('mimics');
       const e = makeEnemy(spec, ch.x, ch.y, { elite: true });
       e.mimicItem = makeItem(lootSpec(), rollRarity(run.floorN, stats().luckF, 2), run.floorN);
@@ -1240,7 +1366,7 @@
   function enemyShoot(e, ang, speed, o) {
     const col = DF.EL_COLOR[e.spec.element] || '#ff8a5a';
     fx.projectiles.push({ x: e.x + Math.cos(ang) * 3, y: e.y - 2 + Math.sin(ang) * 3, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, life: 2.6, dmg: e.dmg * ((o && o.mult) || 0.9),
-      color: col, r: e.boss ? 2.5 : 2, poison: e.abil.has('poisons'), el: e.spec.element, from: e.spec.name });
+      color: col, r: e.boss ? 2.5 : 2, poison: e.abil.has('poisons'), el: e.spec.element, from: e.spec.name, owner: e });
   }
   function updateEnemy(e, dt) {
     if (e.spawnT > 0) { e.spawnT -= dt; return; }
@@ -1267,13 +1393,22 @@
       if (rnd() < dt * 0.4) e.side = -(e.side || 1);
     };
     if (P.dead) { step(Math.cos(e.wob * 0.2) * 5, Math.sin(e.wob * 0.2) * 5); return; }
-    switch (e.beh) {
+    // Charges: wind up, then lunge (any monster with the ability, not just tanks).
+    const chargeStep = () => {
+      if (!e.abil.has('charges') || e.beh === 'tank' || e.hidden) return false;
+      if (e.cs === 'wind') { e.csT -= dt; e.wob += dt * 40; if (e.csT <= 0) { e.cs = 'dash'; e.csT = 0.35; } return true; }
+      if (e.cs === 'dash') { e.csT -= dt; if (rnd() < 0.5) burst(e.x, e.y, '#ffffff', 1, 10); if (step(e.cx * 105, e.cy * 105) || e.csT <= 0) { e.cs = ''; e.chgT = 2.8 + rnd() * 1.6; } return true; }
+      e.chgT = (e.chgT == null ? 1.5 + rnd() * 2 : e.chgT) - dt;
+      if (e.chgT <= 0 && d < 70 && d > 12 && lineClear(e, P)) { e.cs = 'wind'; e.csT = 0.45; e.cx = ux; e.cy = uy; return true; }
+      return false;
+    };
+    if (!chargeStep()) switch (e.beh) {
       case 'ambusher':
         if (e.hidden) { if (d < 26) reveal(e); break; }
         chase(1); break;
       case 'shooter':
         keepAway(46);
-        if (e.t <= 0 && lineClear(e, P)) { e.t = (e.boss ? 1.3 : 2) + rnd() * 0.6; enemyShoot(e, Math.atan2(dy, dx), e.boss ? 58 : 50); if (e.boss) { enemyShoot(e, Math.atan2(dy, dx) - 0.3, 58); enemyShoot(e, Math.atan2(dy, dx) + 0.3, 58); } SND.shoot(e.x / LW); }
+        if (e.t <= 0 && lineClear(e, P)) { e.t = ((e.boss ? 1.3 : 2) + rnd() * 0.6) * (e.abil.has('rapid fire') ? 0.45 : 1); enemyShoot(e, Math.atan2(dy, dx), e.boss ? 58 : 50); if (e.boss) { enemyShoot(e, Math.atan2(dy, dx) - 0.3, 58); enemyShoot(e, Math.atan2(dy, dx) + 0.3, 58); } SND.shoot(e.x / LW); }
         break;
       case 'summoner': {
         keepAway(50);
@@ -1306,15 +1441,51 @@
     if (e.boss && e.t3 <= 0) { e.t3 = 6 + rnd() * 2; const n = 8 + Math.min(6, run.floorN); for (let k = 0; k < n; k++) enemyShoot(e, k / n * Math.PI * 2 + rnd() * 0.2, 42, { mult: 0.7 }); SND.shoot(e.x / LW); fx.shake = Math.max(fx.shake, 0.15); }
     // Abilities.
     const a = e.abil;
-    if ((a.has('fire trail') || a.has('freezes floor')) && !e.hidden) {
+    // Ring shot: a burst of shots in every direction now and then.
+    if (a.has('ring shot') && !e.hidden && d < 120) {
+      e.ringT = (e.ringT == null ? 2 + rnd() * 2 : e.ringT) - dt;
+      if (e.ringT <= 0) { e.ringT = e.boss ? 3.5 : 4.5; const n = e.boss ? 12 : 8, off = rnd(); for (let k = 0; k < n; k++) enemyShoot(e, (k + off) / n * Math.PI * 2, 38, { mult: 0.6 }); SND.shoot(e.x / LW); }
+    }
+    // Regenerates: heals when you leave it alone for a moment.
+    if (a.has('regenerates') && e.hp < e.maxHp && time - (e.lastHitT || 0) > 1.8) {
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.05 * dt); if (rnd() < dt * 4) burst(e.x, e.y - 4, '#72e07e', 1, 12, true); if (e.boss) DF.UI.bossBar(e);
+    }
+    // Slams: winds up when you're close, then a shockwave all around it.
+    if (a.has('slams') && !e.hidden) {
+      if (e.slamWind > 0) {
+        e.slamWind -= dt;
+        if (e.slamWind <= 0) {
+          fx.shake = Math.max(fx.shake, 0.25); SND.bash(e.x / LW); breakPropsNear(e.x, e.y, 24);
+          for (let k = 0; k < 20; k++) { const ang = k / 20 * Math.PI * 2; fx.particles.push({ x: e.x + Math.cos(ang) * 6, y: e.y + Math.sin(ang) * 4, vx: Math.cos(ang) * 70, vy: Math.sin(ang) * 50, life: 0.3, max: 0.3, color: '#d8c8a0', size: 1, glow: false, g: 0 }); }
+          if (dist(P, e) < 25 + P.r) { hurtPlayer(Math.round(e.dmg * 1.2), e); const k2 = Math.atan2(P.y - e.y, P.x - e.x); P.vx += Math.cos(k2) * 140; P.vy += Math.sin(k2) * 140; P.knockT = 0.15; }
+        }
+      } else {
+        e.slamT = (e.slamT == null ? 1.5 : e.slamT) - dt;
+        if (e.slamT <= 0 && d < 22) { e.slamWind = 0.55; e.slamT = 3.2 + rnd(); }
+      }
+    }
+    // Burrows: dives underground, travels unseen, and pops up beside you.
+    if (a.has('burrows')) {
+      if (e.burrowing > 0) {
+        e.burrowing -= dt;
+        if (rnd() < dt * 10) burst(e.x, e.y + 1, '#6a5a4a', 1, 10);
+        if (e.burrowing <= 0) { const s = randomFloorNear(P.x, P.y, 12, 26); if (s) { e.x = s.x; e.y = s.y; } e.hidden = false; e.spawnT = 0.2; for (let k = 0; k < 10; k++) burst(e.x, e.y, '#8a6a4a', 1, 35); SND.bash(e.x / LW); }
+      } else if (!e.hidden) {
+        e.burT = (e.burT == null ? 2.5 + rnd() * 2 : e.burT) - dt;
+        if (e.burT <= 0 && d < 110) { e.burT = 5 + rnd() * 2; e.burrowing = 1.1; e.hidden = true; for (let k = 0; k < 10; k++) burst(e.x, e.y, '#8a6a4a', 1, 30); }
+      }
+    }
+    if ((a.has('fire trail') || a.has('freezes floor') || a.has('poison trail')) && !e.hidden) {
       e.trailT -= dt;
       // A trail only leaves a new patch where there isn't one already, and a room holds at most 30 of them.
-      const near = e.trailT <= 0 && room.effects.some((ef) => (ef.type === 'fire' || ef.type === 'ice') && Math.abs(ef.x - e.x) < 4 && Math.abs(ef.y - e.y - 1) < 4);
-      if (near) { e.trailT = 0.15; const ef = room.effects.find((f) => (f.type === 'fire' || f.type === 'ice') && Math.abs(f.x - e.x) < 4 && Math.abs(f.y - e.y - 1) < 4); if (ef) ef.life = Math.max(ef.life, ef.max * 0.8); }
+      const isPatch = (ef) => ef.type === 'fire' || ef.type === 'ice' || ef.type === 'ooze';
+      const near = e.trailT <= 0 && room.effects.some((ef) => isPatch(ef) && Math.abs(ef.x - e.x) < 4 && Math.abs(ef.y - e.y - 1) < 4);
+      if (near) { e.trailT = 0.15; const ef = room.effects.find((f) => isPatch(f) && Math.abs(f.x - e.x) < 4 && Math.abs(f.y - e.y - 1) < 4); if (ef) ef.life = Math.max(ef.life, ef.max * 0.8); }
       if (e.trailT <= 0) {
-        const patches = room.effects.filter((ef) => ef.type === 'fire' || ef.type === 'ice');
+        const patches = room.effects.filter(isPatch);
         if (patches.length >= 30) room.effects.splice(room.effects.indexOf(patches[0]), 1);
-        e.trailT = e.boss ? 0.25 : 0.4; const ice = a.has('freezes floor') && (!a.has('fire trail') || rnd() < 0.5); room.effects.push({ type: ice ? 'ice' : 'fire', x: e.x, y: e.y + 1, r: e.boss ? 6 : 4, life: ice ? 4 : 2.6, max: ice ? 4 : 2.6, dmg: Math.max(1, Math.round(e.dmg * 0.5)), from: e.spec.name }); }
+        const kinds = [a.has('fire trail') && 'fire', a.has('freezes floor') && 'ice', a.has('poison trail') && 'ooze'].filter(Boolean), kind = pick(kinds), ice = kind === 'ice';
+        e.trailT = e.boss ? 0.25 : 0.4; room.effects.push({ type: kind, x: e.x, y: e.y + 1, r: e.boss ? 6 : 4, life: ice ? 4 : 2.6, max: ice ? 4 : 2.6, dmg: Math.max(1, Math.round(e.dmg * 0.5)), from: e.spec.name }); }
     }
     if (a.has('heals friends')) {
       e.healT = (e.healT == null ? 3 : e.healT) - dt;
@@ -1341,6 +1512,8 @@
       p.life -= dt; if (p.life <= 0) { p.dead = true; continue; }
       const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
       const t = tileAt(Math.floor(nx / T), Math.floor(ny / T));
+      const pr = propAt(Math.floor(nx / T), Math.floor(ny / T));
+      if (pr) { breakProp(pr); if (!p.pierce || !p.mine) { p.dead = true; continue; } }
       if (t === TL.WALL || t === TL.BLOCK || t === TL.BRAZIER) {
         if (p.bounce > 0) {
           p.bounce--;
@@ -1378,6 +1551,7 @@
         ef.done = true; SND.boom(1.5, ef.x / LW); fx.shake = Math.max(fx.shake, 0.35);
         for (let i = 0; i < 24; i++) burst(ef.x, ef.y, i % 2 ? '#ffcf4a' : '#ff6a2a', 1, 70, true);
         if (!ef.mine && dist(P, ef) < ef.r + P.r) hurtPlayer(ef.dmg, ef);
+        breakPropsNear(ef.x, ef.y, ef.r);
         room.enemies.slice().forEach((e) => { if (dist(e, ef) < ef.r + (ef.mine ? e.r : 0)) damageEnemy(e, ef.dmg, ef.mine ? { from: ef, knock: ef.bomb ? 110 : 80, element: ef.bomb ? 'none' : 'fire', powers: ef.bomb ? [] : ['burn'] } : { from: ef, knock: 80 }); });
       }
       if (ef.type === 'fire' && rnd() < dt * 1.5) burst(ef.x + (rnd() - 0.5) * ef.r, ef.y, '#ff9a3a', 1, 8, true);
@@ -1688,6 +1862,7 @@
     for (const ef of room.effects) {
       const a = Math.min(1, ef.life / 0.6);
       if (ef.type === 'fire') { lg.globalAlpha = 0.75 * a; lg.fillStyle = '#ff6a1a'; lg.beginPath(); lg.arc(ef.x, ef.y, ef.r * (0.8 + Math.sin(time * 12 + ef.x) * 0.15), 0, 7); lg.fill(); lg.fillStyle = '#ffd23a'; lg.fillRect(Math.round(ef.x - 1), Math.round(ef.y - 1), 2, 2); lights.push({ x: ef.x, y: ef.y, r: 12, a: 0.6 * a, c: '#ff8a3a' }); }
+      if (ef.type === 'ooze') { lg.globalAlpha = 0.6 * a; lg.fillStyle = '#5ab83a'; lg.beginPath(); lg.arc(ef.x, ef.y, ef.r, 0, 7); lg.fill(); lg.fillStyle = '#b8ff6a'; lg.fillRect(Math.round(ef.x + Math.sin(time * 3 + ef.x) * 1.5), Math.round(ef.y - 1), 1, 1); }
       if (ef.type === 'ice') { lg.globalAlpha = 0.55 * a; lg.fillStyle = '#bff0ff'; lg.beginPath(); lg.arc(ef.x, ef.y, ef.r, 0, 7); lg.fill(); lg.fillStyle = '#ffffff'; lg.fillRect(Math.round(ef.x), Math.round(ef.y - 1), 1, 1); }
       if (ef.type === 'boom' && !ef.done && ef.bomb) { // the Tinkerer's bomb: flies in an arc, then sits there fizzing
         const k = clamp(1 - (ef.life - 0.4) / 0.3, 0, 1), bx = ef.sx + (ef.x - ef.sx) * k, by = ef.sy + (ef.y - ef.sy) * k - Math.sin(k * Math.PI) * 14;
@@ -1720,6 +1895,7 @@
     for (const p of room.pickups) objs.push({ y: p.y, draw: () => drawPickup(lg, p, lights) });
     for (const e of room.enemies) objs.push({ y: e.y, draw: () => drawEnemy(lg, e, lights) });
     for (const tu of P.turrets) objs.push({ y: tu.y, draw: () => drawTurret(lg, tu, lights) });
+    if (room.props) for (const pr of room.props) { if (pr.broken) drawShards(lg, pr); else objs.push({ y: pr.ty * T + T - 1, draw: () => drawProp(lg, pr, lights) }); }
     objs.push({ y: P.y, draw: () => drawPlayer(lg, lights) });
     objs.sort((a, b) => a.y - b.y).forEach((o) => o.draw());
     for (const p of fx.projectiles) {
@@ -1914,9 +2090,34 @@
     if (e.shield) { g.strokeStyle = 'rgba(154,216,255,0.8)'; g.beginPath(); g.arc(e.x, e.y - e.h / 2 + 1, Math.max(e.w, e.h) / 2 + 2, 0, 7); g.stroke(); }
     if (e.burn > 0 && rnd() < 0.3) fx.particles.push({ x: e.x + (rnd() - 0.5) * e.w, y: e.y - rnd() * e.h, vx: 0, vy: -15, life: 0.3, max: 0.3, color: '#ff8a3a', size: 1, glow: true, g: 0 });
     if (e.slow > 0) { g.fillStyle = 'rgba(160,230,255,0.5)'; g.fillRect(Math.round(e.x - e.w / 2), Math.round(e.y + e.r * 0.4 - 1), Math.round(e.w), 1); }
-    if (e.state === 'wind') { g.fillStyle = '#ff5a5a'; g.fillRect(Math.round(e.x), Math.round(e.y - e.h - 5), 1, 3); g.fillRect(Math.round(e.x), Math.round(e.y - e.h - 1), 1, 1); }
+    if (e.slamWind > 0) { g.globalAlpha = 0.35 + 0.35 * Math.sin(time * 30); g.strokeStyle = '#ff5a3a'; g.beginPath(); g.arc(e.x, e.y, 25, 0, 7); g.stroke(); g.globalAlpha = 1; }
+    if (e.state === 'wind' || e.cs === 'wind' || e.slamWind > 0) { g.fillStyle = '#ff5a5a'; g.fillRect(Math.round(e.x), Math.round(e.y - e.h - 5), 1, 3); g.fillRect(Math.round(e.x), Math.round(e.y - e.h - 1), 1, 1); }
     if (!e.boss && e.hp < e.maxHp) { const w = Math.max(6, Math.round(e.w)); g.fillStyle = '#1a1020'; g.fillRect(Math.round(e.x - w / 2), Math.round(e.y - e.h - 3 + hov), w, 1); g.fillStyle = e.elite ? '#ffcf4a' : '#ff5a5a'; g.fillRect(Math.round(e.x - w / 2), Math.round(e.y - e.h - 3 + hov), Math.max(1, Math.round(w * e.hp / e.maxHp)), 1); }
     if (['fire', 'light', 'lightning'].includes(e.spec.element) || e.boss || e.elite) lights.push({ x: e.x, y: e.y - e.h / 2, r: e.boss ? 24 : 10, a: 0.45, c: DF.EL_COLOR[e.spec.element] });
+  }
+  function drawProp(g, p, lights) {
+    const x = p.tx * T, y = p.ty * T;
+    lights.push({ x: x + 4, y: y + 3, r: 9, a: 0.45, c: p.kind === 'pot' ? '#ffb070' : '#e0b070' }); // a faint glint so they show in the dark
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(x + 1, y + 7, 6, 1);
+    if (p.kind === 'pot') { // a clay pot: rim, round body, a painted band
+      const body = ['#a8583a', '#9a6a3a', '#8a4a4a'][p.v || 0], hi = C.lighten(body, 0.25), dk = C.darken(body, 0.35);
+      g.fillStyle = '#0c0a10'; g.fillRect(x + 2, y - 1, 4, 1); g.fillRect(x + 1, y + 1, 6, 5); g.fillRect(x + 2, y + 6, 4, 1);
+      g.fillStyle = dk; g.fillRect(x + 2, y, 4, 1);
+      g.fillStyle = body; g.fillRect(x + 2, y + 1, 4, 5); g.fillRect(x + 1, y + 2, 6, 3);
+      g.fillStyle = hi; g.fillRect(x + 2, y + 2, 1, 2); g.fillRect(x + 3, y + 1, 2, 1);
+      g.fillStyle = C.mix(body, '#e8c890', 0.5); g.fillRect(x + 2, y + 4, 4, 1);
+      g.fillStyle = dk; g.fillRect(x + 6, y + 3, 1, 2); g.fillRect(x + 3, y + 5, 3, 1);
+    } else { // a wooden crate: planks and a cross brace
+      g.fillStyle = '#0c0a10'; g.fillRect(x, y - 1, 8, 8);
+      g.fillStyle = '#8a6034'; g.fillRect(x + 1, y, 6, 6);
+      g.fillStyle = '#b08050'; g.fillRect(x + 1, y, 6, 1); g.fillRect(x + 1, y, 1, 6);
+      g.fillStyle = '#5a3c1e'; g.fillRect(x + 1, y + 2, 6, 1); g.fillRect(x + 1, y + 4, 6, 1);
+      g.fillStyle = '#c89a60'; for (let i = 0; i < 6; i++) g.fillRect(x + 1 + i, y + 5 - i, 1, 1);
+    }
+  }
+  function drawShards(g, p) {
+    const x = p.tx * T, y = p.ty * T, c = p.kind === 'pot' ? '#6a3420' : '#4a3018';
+    g.fillStyle = c; g.fillRect(x + 1, y + 5, 2, 1); g.fillRect(x + 5, y + 6, 1, 1); g.fillRect(x + 3, y + 4, 1, 1); g.fillRect(x + 6, y + 3, 1, 1);
   }
   function drawTurret(g, tu, lights) {
     const x = Math.round(tu.x), y = Math.round(tu.y), fading = tu.life < 2 && Math.floor(time * 8) % 2 === 0;
@@ -2229,7 +2430,7 @@
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },
   });
   // For testing from the browser console.
-  G.debug = { get floor() { return floor; }, enterRoom, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
+  G.debug = { get floor() { return floor; }, enterRoom, breakProp, makeEnemy, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
   DF.G = G;
   DF.boot = function () { resize(); requestAnimationFrame((t) => { lastT = t; frame(t); }); prepareNextRun(); };
 }(window.DF));

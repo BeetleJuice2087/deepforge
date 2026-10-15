@@ -267,6 +267,11 @@
     },
     weak(x) { if (!ready()) return; const t = ctx.currentTime; tone('triangle', 880, 1320, t, 0.08, 0.12, P(x)); tone('triangle', 1320, 1760, t + 0.06, 0.08, 0.1, P(x)); },
     hurt() { if (!ready() || !often('hurt', 120)) return; const t = ctx.currentTime; tone('sawtooth', 260, 70, t, 0.25, 0.22); hiss('lowpass', 1200, 200, 0.7, t, 0.18, 0.2); },
+    smash(x, kind) {
+      if (!ready() || !often('smash', 40)) return; const t = ctx.currentTime;
+      if (kind === 'pot') { hiss('highpass', 3000, 1800, 0.9, t, 0.12, 0.26, P(x)); tone('triangle', 900, 500, t, 0.06, 0.08, P(x)); tone('triangle', 1300, 700, t + 0.04, 0.05, 0.06, P(x)); }
+      else { hiss('bandpass', 700, 300, 1.1, t, 0.16, 0.3, P(x)); tone('square', 160, 80, t, 0.08, 0.1, P(x)); }
+    },
     kill(x) {
       if (!ready() || !often('kill', 50)) return; const t = ctx.currentTime;
       hiss('bandpass', 1400, 300, 1.4, t, 0.22, 0.26, P(x)); tone('square', 180, 60, t, 0.18, 0.12, P(x));
