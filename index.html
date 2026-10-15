@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0f0c13">
+<meta name="description" content="A pixel dungeon crawler where an AI invents every floor, monster and treasure, and you forge anything into anything.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Deepforge">
+<title>Deepforge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquarda+Bastarda+9&family=Pixelify+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app" class="away">
+  <header id="hud">
+    <div class="hp" aria-label="Health">
+      <div class="hp-bar"><i id="hp-fill"></i></div>
+      <span id="hp-text">30 / 30</span>
+      <div class="mp" id="mp" hidden><i id="mp-fill"></i></div>
+    </div>
+    <div id="floor-name"></div>
+    <span class="gold-pill" aria-label="Gold"><i class="coin"></i><b id="gold">0</b></span>
+    <i id="ai-dot" hidden></i>
+    <button class="icon-btn" id="btn-inv" type="button" aria-label="Hero and bag (Tab)"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 1h4v1h1v1h1v8H2V3h1V2h1zM5 2v1h2V2zM4 6v1h4V6z" /></svg></button>
+    <button class="icon-btn" id="btn-pause" type="button" aria-label="Pause"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 2h2v8H3zM7 2h2v8H7z" /></svg></button>
+  </header>
+
+  <main id="stage">
+    <canvas id="cv" aria-label="The dungeon"></canvas>
+    <canvas id="minimap" aria-label="Map of this floor"></canvas>
+    <div id="bossbar" hidden><span id="boss-name"></span><small id="boss-rec" hidden></small><div class="boss-track"><i id="boss-fill"></i></div></div>
+    <div id="banner" aria-live="polite"></div>
+    <div id="toasts" aria-live="polite"></div>
+  </main>
+
+  <nav id="slots" aria-label="Equipment and bag">
+    <div class="grp grp-eq"><span class="grp-label">Wearing</span><div class="eq">
+      <button class="slot eqs" type="button" data-eq="weapon"></button>
+      <button class="slot eqs" type="button" data-eq="armour"></button>
+      <button class="slot eqs" type="button" data-eq="trinket"></button>
+    </div></div>
+    <div class="grp grp-bag"><span class="grp-label" id="bag-label">Bag 0/6</span><div class="bag">
+      <button class="slot" type="button" data-bag="0"></button><button class="slot" type="button" data-bag="1"></button><button class="slot" type="button" data-bag="2"></button>
+      <button class="slot" type="button" data-bag="3"></button><button class="slot" type="button" data-bag="4"></button><button class="slot" type="button" data-bag="5"></button>
+    </div></div>
+    <div class="grp"><span class="grp-label">Potion</span><button class="slot potion" id="potion" type="button" aria-label="Drink a potion (Q)"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" id="potion-img"><b id="potion-n">1</b></button></div>
+  </nav>
+  <p class="keys" id="keys"><kbd>WASD</kbd> move <span id="key-moves"><kbd>J</kbd> swing <kbd>K</kbd> bash</span> <kbd>Q</kbd> potion <kbd>1</kbd>–<kbd>6</kbd> bag <kbd>Tab</kbd> hero <kbd>Esc</kbd> pause <span id="key-act" hidden></span></p>
+
+  <section id="pad" aria-label="Touch controls">
+    <div id="stick-zone"><div id="stick"><div id="knob"></div></div></div>
+    <div class="btns">
+      <button class="pad-btn" id="btn-action" type="button" hidden>Forge</button>
+      <button class="pad-btn" id="btn-spell" type="button" aria-label="Nova" hidden>Nova</button>
+      <button class="pad-btn" id="btn-spell2" type="button" aria-label="Spell" hidden>Spell</button>
+      <button class="pad-btn" id="btn-bash" type="button" aria-label="Shield bash">Bash</button>
+      <button class="pad-btn" id="btn-attack" type="button" aria-label="Swing">Swing</button>
+    </div>
+  </section>
+</div>
+
+<div id="camp" class="screen">
+  <div class="camp-inner">
+    <h1 class="logo">Deepforge</h1>
+    <canvas id="camp-scene" width="160" height="56" aria-hidden="true"></canvas>
+    <div id="camp-body"></div>
+  </div>
+</div>
+
+<div id="modal" class="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script src="js/data.js"></script>
+<script src="js/prompts.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
