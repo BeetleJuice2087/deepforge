@@ -182,23 +182,22 @@
     const W = EL[el], h = W.hue[0] + R() * (W.hue[1] - W.hue[0]) + (R() - 0.5) * 30;
     return [hsl(h, 55 + R() * 30, 45 + R() * 15), hsl(h + 20 + R() * 40, 60 + R() * 30, 60 + R() * 15), hsl(h, 40 + R() * 20, 18 + R() * 8), R() < 0.7 ? '#ffffff' : hsl(h + 180, 90, 70)];
   }
-  // Monsters come from the bestiary: each creature has its own description, way of fighting and signature ability.
   function monster(R, th, slot, avoid) {
     const tier = slot < 2 ? 1 : slot === 2 ? 2 : (R() < 0.5 ? 2 : 3);
-    for (let tries = 0; tries < 30; tries++) {
-      const el = R() < 0.7 ? th.element : R.pick(NEIGHBOURS[th.element]), W = EL[el];
-      // Mostly creatures made for this slot's strength, sometimes a weaker one.
-      const fits = DF.BESTIARY.filter((m) => (!m.el || m.el === el) && m.t <= tier && (m.t === tier || R() < 0.35));
-      if (!fits.length) continue;
-      const c = R.pick(fits);
-      let name = c.el ? c.n : R.pick(W.pre) + ' ' + c.n;
-      if (tier >= 2 && c.t < tier && R() < 0.5) name = R.pick(SIZES) + ' ' + name; // a "Hulking" version of a smaller creature
+    const pool = tier === 1 ? ['chaser', 'swarm', 'shooter', 'ambusher', 'trickster'] : ['chaser', 'shooter', 'ambusher', 'tank', 'trickster', 'summoner'];
+    for (let tries = 0; tries < 20; tries++) {
+      const behaviour = R.pick(pool), el = R() < 0.7 ? th.element : R.pick(NEIGHBOURS[th.element]), W = EL[el];
+      const noun = R.pick(CREATURES[behaviour]);
+      let name = R.pick(W.pre) + ' ' + noun;
+      if (tier >= 2 && R() < 0.3) name = R.pick(SIZES) + ' ' + name;
       if (name.length > 24 || avoid.includes(name)) continue;
-      const behaviour = R.pick(c.b);
-      const abilities = c.a.slice();
-      if (tier === 3 && abilities.length < 2 && R() < 0.5) { const a = R.pick(EL_ABILITIES[el]); if (!abilities.includes(a)) abilities.push(a); }
-      return { name, description: c.d, colors: monsterColors(R, el), element: el, weakness: DF.NATURAL_WEAKNESS[el], tier, behaviour, abilities,
-        special: c.s[0], specialText: c.s[1], body: bodyOf(c.n.split(' ').pop()) };
+      const abilities = [];
+      const pa = tier === 1 ? 0.3 : tier === 2 ? 0.8 : 1;
+      if (R() < pa) abilities.push(R() < 0.7 ? R.pick(EL_ABILITIES[el]) : R.pick(DF.ABILITIES));
+      if (tier === 3 && R() < 0.5) { const a = R.pick(EL_ABILITIES[el]); if (!abilities.includes(a)) abilities.push(a); }
+      const feel = R.pick(W.feel);
+      const description = fit(`${an(feel)}${feel} ${noun.toLowerCase()} that ${R.pick(VERBS[behaviour])}.`, 90);
+      return { name, description: cap(description), colors: monsterColors(R, el), element: el, weakness: DF.NATURAL_WEAKNESS[el], tier, behaviour, abilities, body: bodyOf(noun) };
     }
     return null;
   }
@@ -214,13 +213,10 @@
     else name = 'The ' + R.pick(W.pre) + ' ' + R.pick(BOSS_TITLES);
     if (name.length > 24) name = 'The ' + R.pick(W.pre) + ' ' + noun;
     const behaviour = R.pick(['tank', 'summoner', 'shooter', 'chaser', 'trickster']);
-    const a1 = R.pick(EL_ABILITIES[th.element]); let a2 = R.pick(DF.ABILITIES.filter((a) => a !== a1 && !['splits when hit', 'mutates', 'burrows'].includes(a)));
+    const a1 = R.pick(EL_ABILITIES[th.element]); let a2 = R.pick(DF.ABILITIES.filter((a) => a !== a1 && a !== 'splits when hit'));
     const where = th.name.replace(/^The /, '').split(' of ')[0];
     const description = fit(`Ruler of the ${where}. It ${R.pick(VERBS[behaviour])}.`, 90);
-    const prof = DF.bestiaryFor(noun), abilities = [a1, a2];
-    if (prof && prof.a[0] && prof.a[0] !== 'mutates' && !abilities.includes(prof.a[0])) abilities[1] = prof.a[0];
-    return { name: avoid.includes(name) ? name + ' II' : name, description, colors: monsterColors(R, th.element), element: th.element, weakness: DF.NATURAL_WEAKNESS[th.element], tier: 3, behaviour, abilities, body: bodyOf(noun),
-      special: prof ? prof.s[0] : '', specialText: prof ? prof.s[1] : '' };
+    return { name: avoid.includes(name) ? name + ' II' : name, description, colors: monsterColors(R, th.element), element: th.element, weakness: DF.NATURAL_WEAKNESS[th.element], tier: 3, behaviour, abilities: [a1, a2], body: bodyOf(noun) };
   }
   function item(R, th, type) {
     const icon = R.pick(DF.ICONS[type]), noun = R.pick(ICON_NOUNS[icon]);

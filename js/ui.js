@@ -570,16 +570,6 @@
   }
 
   /* ---------- Books ---------- */
-  // A monster's signature ability (from the bestiary, even for ones the AI invented).
-  function special(spec) {
-    const prof = DF.bestiaryFor(spec.name), name = spec.special || (prof && prof.s[0]), text = spec.specialText || (prof && prof.s[1]);
-    return name ? `<p class="special"><b>${esc(name)}</b> ${esc(text || '')}</p>` : '';
-  }
-  function abilitiesOf(spec) {
-    const prof = DF.bestiaryFor(spec.name), list = (spec.abilities || []).slice();
-    if (prof) prof.a.forEach((a) => { if (a !== 'mutates' && !list.includes(a)) list.push(a); });
-    return list.filter((a) => a !== 'mutates');
-  }
   function openBook(tab, back) {
     const m = G.meta;
     const tabs = `<div class="tabs"><button data-t="mon" class="${tab === 'mon' ? 'on' : ''}">Monsters</button><button data-t="item" class="${tab === 'item' ? 'on' : ''}">Items</button><button data-t="rec" class="${tab === 'rec' ? 'on' : ''}">Recipes</button></div>`;
@@ -588,9 +578,9 @@
       const list = Object.values(m.books.mon);
       body = list.length ? `<ul class="book">${list.slice().reverse().map(({ spec, kills }) => `
         <li><img class="pix" src="${DF.bigPicture('monster', spec, 5)}" alt=""><div><h3>${esc(spec.name)}${spec.boss ? ' <span class="tag boss">Boss</span>' : ''}</h3>
-        <p>${esc(spec.description)}</p>${special(spec)}
+        <p>${esc(spec.description)}</p>
         <p class="chips"><span class="chip" style="--c:${DF.EL_COLOR[spec.element]}">${spec.element}</span><span class="chip weak" style="--c:${DF.EL_COLOR[spec.weakness]}">weak to ${spec.weakness}</span>
-        <span class="chip plain">${esc(DF.BEHAVIOUR_TEXT[spec.behaviour] || '')}</span>${abilitiesOf(spec).map((a) => `<span class="chip plain" title="${esc(DF.ABILITY_TEXT[a] || '')}">${esc(a)}</span>`).join('')}</p>
+        <span class="chip plain">${esc(DF.BEHAVIOUR_TEXT[spec.behaviour] || '')}</span>${(spec.abilities || []).map((a) => `<span class="chip plain">${a}</span>`).join('')}</p>
         <p class="kills">${kills ? `Defeated ${kills}` : 'Not defeated yet'}</p></div></li>`).join('')}</ul>` : '<p class="empty-book">Monsters you meet are written here.</p>';
     } else if (tab === 'item') {
       const list = Object.values(m.books.item);

@@ -3,10 +3,10 @@
    away when online), falling back to the saved copy when offline. Fonts come
    from the saved copy and refresh in the background. Everything else (the AI
    Worker, the on-device AI download) is left alone. */
-const CACHE = 'deepforge-v37';
+const CACHE = 'deepforge-v34';
 const MUSIC = 'deepforge-music-v1'; // the soundtrack: saved the first time each track plays, kept across updates
 const offline = new Set(); // pages that opened from the saved copy
-const APP_FILES = ['./', 'index.html', 'css/styles.css', 'js/data.js', 'js/prompts.js', 'js/sprites.js', 'js/bestiary.js', 'js/gen.js', 'js/ai.js', 'js/audio.js', 'js/game.js', 'js/ui.js', 'manifest.webmanifest',
+const APP_FILES = ['./', 'index.html', 'css/styles.css', 'js/data.js', 'js/prompts.js', 'js/sprites.js', 'js/gen.js', 'js/ai.js', 'js/audio.js', 'js/game.js', 'js/ui.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {

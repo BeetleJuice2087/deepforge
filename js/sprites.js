@@ -193,94 +193,9 @@
     ['basilisk', /\b(basilisks?|hydras?|drakes?|salamanders?|raptors?|lizards?)\b/g],
     ['blade', /\b(blades?|swords?)\b/g],
     ['slime', /\b(slimes?|oozes?|goo|gel|sludge\w*|globs?|gloop|blobs?)\b/g],
-    // Two-word names that should beat their last word.
-    ['lich', /\bskeleton ?mages?\b/g],
-    ['troll', /\bzombie ?brutes?\b/g],
-    ['ghoul', /\btroglodytes?\b/g],
-    ['flame', /\belementals?\b/g],
-    ['spiky', /\bspik(y|es)\b/g],
-    ['golem', /\bclockworks?\b/g],
-    ['ghost', /\blost ?souls?\b/g],
-    ['eyeball', /\beye ?beasts?\b/g],
-    ['walker', /\b(stags?|elks?|moose|hinds?|antelopes?|jackals?|hyenas?|panthers?|cougars?|lynx|badgers?)\b/g],
   );
-
-  /* ---- Monster parts, like Starbound's guns: people and floaters are a top, a middle and a bottom
-     (7 wide); beasts are a back, a middle and a head (11 wide). The name picks the parts, so a monster
-     always looks the same, and each kind only uses parts that suit it (skeletons get skulls and ribs). ---- */
-  const PARTS = {
-    tops: { 'head': ["..aaa..", ".aaaaa.", ".adada."], 'horns': ["b.....b", ".baaab.", ".adada."], 'hood': ["..ccc..", ".ccccc.", ".cdcdc."], 'helmet': ["...bb..", ".aaaaa.", ".cdddc."], 'skull': [".aaaaa.", ".adada.", "..aca.."], 'hat': ["...b...", "..bbb..", "bbadabb"], 'ears': ["a.aaa.a", ".aaaaa.", ".adada."], 'crown': [".b.b.b.", ".bbbbb.", ".adada."], 'cyclops': ["..aaa..", ".abdba.", "..aaa.."], 'antenna': [".c...c.", "..ccc..", ".cdddc."] },
-    mids: { 'plain': ["aaaaaaa", "a.bbb.a", "..bbb.."], 'sword': ["aaaaa.b", "a.bbbab", "..bbb.c"], 'shield': [".aaaabb", "a.bbbbb", "..bbbbb"], 'robe': [".bbbbb.", "bbbbbbb", "bbbbbbb"], 'staff': [".aaaa.d", "abbbbac", "..bbb.c"], 'bow': ["aaaa.b.", "a.bbacb", "..bbb.b"], 'wings': ["c.aaa.c", "ccbbbcc", "c.bbb.c"], 'ribs': [".aaaaa.", "a.cac.a", "..aca.."], 'brute': ["aaaaaaa", "aabbbaa", "a.bbb.a"], 'cape': ["ccaaacc", "c.bbb.c", "c.bbb.c"] },
-    bots: { 'legs': ["..a.a..", ".cc.cc."], 'stance': [".a...a.", "cc...cc"], 'hem': ["bbbbbbb", "b.b.b.b"], 'wisp': ["..aaa..", "...a..."], 'tentacles': ["a.a.a.a", ".a.a.a."], 'tail': ["aa.a.a.", "a..c.c."], 'bones': ["..a.a..", "..a.a.."], 'puddle': ["aaaaaaa", ".ccccc."], 'spider': ["c.a.a.c", ".c...c."], 'stumps': [".aa.aa.", ".cc.cc."] },
-    backs: { 'tail up': ["a...", "a...", "a...", ".aaa", "aaaa", ".cc."], 'long tail': ["....", "....", "....", "aaaa", ".aaa", ".cc."], 'spines': ["....", "....", ".b.b", "baaa", ".aaa", ".cc."], 'bushy': ["....", "bb..", "bbb.", ".baa", ".aaa", ".cc."], 'stinger': ["aa..", "a.a.", "..a.", ".aaa", ".aaa", ".cc."], 'fin': ["....", "....", "..a.", ".aaa", "aaaa", "..c."], 'club': ["....", "....", "....", "b.aa", "baaa", ".cc."] },
-    middles: { 'plain': ["...", "...", "...", "aaa", "aaa", "..."], 'spikes': ["...", "...", "b.b", "aaa", "aaa", "..."], 'wings': ["c..", "cc.", "ccc", "aaa", "aaa", "..."], 'plates': ["...", "...", "bbb", "aba", "aaa", "..."], 'ribs': ["...", "...", "...", "aca", "aca", "..."], 'stripes': ["...", "...", "...", "aba", "aba", "..."], 'hump': ["...", "...", ".a.", "aaa", "aaa", "..."], 'shell': ["...", "...", "bbb", "bbb", "aaa", "..."] },
-    fronts: { 'dog': ["..a.", ".aaa", ".aad", "aaaa", "aa..", ".c.."], 'horned': ["...b", "..ab", ".aad", "aaaa", "aa..", ".c.."], 'beak': ["....", ".aa.", ".adb", "aaa.", "aa..", ".c.."], 'tusks': ["....", ".aaa", "aaad", "aaab", "aa..", ".c.."], 'jaws': ["....", ".aad", ".a..", "aadd", "aa..", ".c.."], 'long neck': ["..aa", "..ad", "..a.", ".aa.", "aa..", ".c.."], 'skull': ["....", ".aaa", ".adc", "aaca", "aa..", ".c.."], 'antlers': ["b.b.", ".bb.", ".aad", "aaaa", "aa..", ".c.."] },
-  };
-  const ALL = (k) => Object.keys(PARTS[k]);
-  // [tops, middles, bottoms] each kind may use, and how often it uses parts instead of its hand-drawn shape.
-  const PART_KINDS = {
-    biped: [ALL('tops'), ALL('mids'), ['legs', 'stance', 'hem', 'tail', 'bones', 'stumps', 'wisp', 'tentacles'], 1],
-    skeleton: [['skull', 'helmet', 'crown', 'hood'], ['ribs', 'sword', 'shield', 'bow', 'staff', 'cape'], ['bones', 'legs', 'stance'], 0.6],
-    zombie: [['head', 'ears'], ['plain', 'brute', 'cape'], ['legs', 'stance', 'stumps'], 0.5],
-    goblin: [['ears'], ['plain', 'sword', 'bow', 'shield'], ['legs', 'stance'], 0.6],
-    orc: [['head', 'horns', 'helmet'], ['brute', 'sword', 'shield'], ['stance', 'legs', 'stumps'], 0.6],
-    cultist: [['hood', 'horns', 'crown', 'skull'], ['robe', 'staff', 'cape', 'plain'], ['hem', 'legs', 'wisp'], 0.6],
-    knight: [['helmet', 'horns', 'crown', 'skull'], ['sword', 'shield', 'plain', 'cape', 'staff'], ['legs', 'stance', 'stumps'], 0.6],
-    imp: [['horns', 'ears', 'head', 'antenna'], ['wings', 'plain', 'sword', 'staff'], ['tail', 'legs', 'stance'], 0.6],
-    demon: [['horns', 'crown'], ['wings', 'brute', 'cape'], ['tail', 'stance'], 0.5],
-    lich: [['skull', 'crown', 'hood'], ['robe', 'staff'], ['hem', 'wisp'], 0.6],
-    wizard: [['hat', 'hood'], ['robe', 'staff'], ['hem'], 0.6],
-    rogue: [['hood'], ['sword', 'cape', 'plain'], ['legs', 'stance'], 0.6],
-    archer: [['hood', 'ears', 'head', 'helmet'], ['bow'], ['legs', 'stance'], 0.6],
-    spearman: [['helmet', 'head'], ['staff', 'shield'], ['legs', 'stance'], 0.4],
-    shieldbearer: [['helmet', 'head', 'horns'], ['shield'], ['legs', 'stance'], 0.5],
-    vampire: [['head', 'crown'], ['cape'], ['legs'], 0.5],
-    ghost: [['head', 'hood', 'cyclops'], ['robe', 'cape', 'plain'], ['wisp', 'tentacles'], 0.4],
-    wraith: [['hood'], ['robe', 'cape'], ['wisp', 'tentacles'], 0.5],
-    banshee: [['head', 'hood'], ['robe', 'cape'], ['wisp'], 0.4],
-    reaper: [['hood', 'skull'], ['robe', 'staff'], ['wisp', 'hem'], 0.5],
-    troll: [['head', 'horns', 'cyclops'], ['brute'], ['stance', 'stumps'], 0.6],
-    minotaur: [['horns'], ['brute', 'sword'], ['stance', 'stumps'], 0.5],
-    gargoyle: [['horns', 'ears'], ['wings'], ['stance', 'tail'], 0.5],
-    mindflayer: [['cyclops', 'head', 'antenna'], ['robe', 'cape'], ['tentacles'], 0.5],
-    golem: [['head', 'cyclops', 'helmet'], ['brute', 'plain'], ['stance', 'stumps'], 0.5],
-    lizardman: [['head', 'ears'], ['sword', 'shield', 'plain'], ['tail'], 0.5],
-    mummy: [['head', 'cyclops'], ['plain', 'brute'], ['legs', 'stumps'], 0.4],
-  };
-  // Beasts: [backs, middles, heads] and how often.
-  const BEAST_KINDS = {
-    walker: [ALL('backs'), ALL('middles'), ['dog', 'horned', 'tusks', 'jaws', 'antlers'], 1],
-    basilisk: [['long tail', 'spines', 'club', 'fin'], ['plain', 'spikes', 'plates', 'stripes'], ['long neck', 'jaws', 'horned'], 0.6],
-    bonebeast: [['tail up', 'long tail', 'spines'], ['ribs'], ['skull'], 0.6],
-    horse: [['long tail', 'bushy'], ['plain', 'hump', 'stripes'], ['long neck', 'horned'], 0.5],
-  };
-  // The first word that matches picks a head for beasts ("Boar" gets tusks).
-  const BEAST_HEADS = [[/boar|pig|hog/, 'tusks'], [/deer|stag|elk|moose/, 'antlers'], [/bull|goat|ram|ox\b/, 'horned'], [/wolf|hound|dog|fox|jackal|rat|mouse/, 'dog'],
-    [/croc|gator|shark|maw|jaw/, 'jaws'], [/bird|raptor|griffin/, 'beak']];
-  function prefer(list, wish, r) { const w = list.filter((x) => wish.includes(x)); return w.length && r(10) < 7 ? w[r(w.length)] : list[r(list.length)]; }
-  function partRows(kind, spec, r) {
-    const ab = spec.abilities || [], el = spec.element, beh = spec.behaviour, name = String(spec.name || '').toLowerCase();
-    if (PART_KINDS[kind]) {
-      const [ts, ms, bs] = PART_KINDS[kind];
-      // What it does shows in what it carries.
-      const midWish = ab.includes('armoured') || ab.includes('shields') ? ['shield'] : beh === 'shooter' || ab.includes('rapid fire') ? ['bow', 'staff']
-        : beh === 'summoner' || ab.includes('heals friends') ? ['staff', 'robe'] : beh === 'tank' ? ['brute', 'shield'] : ab.includes('charges') ? ['sword'] : [];
-      const topWish = el === 'fire' || el === 'shadow' ? ['horns', 'hood'] : el === 'light' ? ['crown', 'helmet'] : el === 'lightning' ? ['antenna', 'cyclops'] : [];
-      const botWish = beh === 'ambusher' || beh === 'trickster' ? ['wisp', 'tentacles'] : beh === 'tank' ? ['stance', 'stumps'] : [];
-      return PARTS.tops[prefer(ts, topWish, r)].concat(PARTS.mids[prefer(ms, midWish, r)], PARTS.bots[prefer(bs, botWish, r)]);
-    }
-    const [bk, md, fr] = BEAST_KINDS[kind];
-    let head = fr[r(fr.length)];
-    for (const [re, h] of BEAST_HEADS) if (re.test(name) && fr.includes(h)) { head = h; break; }
-    const midWish = ab.includes('armoured') ? ['plates', 'shell'] : el === 'fire' || el === 'earth' ? ['spikes', 'plates'] : [];
-    const back = PARTS.backs[bk[r(bk.length)]], mid = PARTS.middles[prefer(md, midWish, r)], front = PARTS.fronts[head];
-    return back.map((row, y) => row + mid[y] + front[y]).filter((row, y) => y > 0 || /[^.]/.test(row));
-  }
   function creatureRows(spec) {
     const name = String(spec.name || 'Monster'), r = seeded(name), kind = DF.bodyType(spec);
-    // Built from parts some of the time (always for plain people and four-legged beasts).
-    const pk = PART_KINDS[kind] || BEAST_KINDS[kind];
-    if (pk) { const pr = seeded(name + '|parts'); if (pr(100) < pk[3] * 100) return partRows(kind, spec, pr); }
     const grid = (w, h) => Array.from({ length: h }, () => Array(w).fill('.'));
     const out = (gr) => gr.map((row) => row.join(''));
     if (SHAPES[kind]) { const list = SHAPES[kind]; return list[r(list.length)]; }
@@ -388,7 +303,6 @@
     return { a, b, c, d };
   }
   // A monster picture: { right, left, w, h }. Kinds: '' normal, 'elite' gold outline, 'flash' all white.
-  DF.creatureRows = creatureRows;
   DF.monsterSprite = function (spec, kind) {
     const key = 'm|' + spec.name + '|' + (spec.colors || []).join() + '|' + (kind || '');
     if (cache.has(key)) return cache.get(key);
