@@ -66,7 +66,7 @@ window.DF = window.DF || {};
   DF.RARITY = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
   DF.RAR_COLOR = ['#cfc8d2', '#72e07e', '#5aaaff', '#c873ff', '#ffb43a'];
   DF.RAR_MULT = [1, 1.3, 1.65, 2.05, 2.6];
-  DF.POWER_COUNT = [[0, 1], [1, 1], [1, 2], [2, 2], [2, 3]]; // min and max powers per rarity
+  DF.POWER_COUNT = [[0, 1], [1, 1], [1, 2], [2, 2], [2, 4]]; // min and max powers per rarity
 
   /* ---- The fallback pool: six handmade floors so the game never waits for the AI ---- */
   const M = (name, description, colors, element, weakness, tier, behaviour, abilities) => ({ name, description, colors, element, weakness, tier, behaviour, abilities });

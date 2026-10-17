@@ -112,7 +112,7 @@ JSON keys:
 - type: ${types.map((t) => '"' + t + '"').join(' or ')}
 - icon: weapon ${ICONS.weapon.join('/')}; armour ${ICONS.armour.join('/')}; trinket ${ICONS.trinket.join('/')}
 - element: one of ${ELEMENTS.join(', ')}, or none
-- powers: weapons only, 1 to 3 from ${POWERS.join(', ')}
+- powers: weapons only, 1 to 4 from ${POWERS.join(', ')}
 - stat: trinkets only, one of ${STATS.join(', ')}
 - colors: 2 hex colours
 Example: Frost Sword + Ghost Gem = {"name":"Phantom Icicle Blade","description":"A see-through blade that chills whatever it cuts.","type":"weapon","icon":"sword","element":"ice","powers":["freeze","pierce"],"colors":["#cdeeff","#b48bff"]}`;

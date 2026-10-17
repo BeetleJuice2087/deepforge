@@ -113,7 +113,7 @@
     const icon = DF.ICONS[type].includes(low(s.icon)) ? low(s.icon) : DF.ICONS[type][r(DF.ICONS[type].length)];
     const element = low(s.element) === 'none' ? 'none' : pickFrom(DF.ELEMENTS, s.element, 'none');
     let powers = [];
-    if (type === 'weapon') powers = [...new Set((Array.isArray(s.powers) ? s.powers : [s.powers]).map(low).filter((p) => DF.POWERS.includes(p)))].slice(0, 3);
+    if (type === 'weapon') powers = [...new Set((Array.isArray(s.powers) ? s.powers : [s.powers]).map(low).filter((p) => DF.POWERS.includes(p)))].slice(0, 4);
     if (type === 'weapon' && !powers.length) powers = [DF.POWERS[r(DF.POWERS.length)]];
     const stat = type === 'trinket' ? pickFrom(DF.STATS, s.stat, DF.STATS[r(DF.STATS.length)]) : '';
     let colors = hexes(s.colors).slice(0, 2);
