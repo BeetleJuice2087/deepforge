@@ -93,17 +93,24 @@
   </section>
 </main>
 
-<script src="js/data.js"></script>
-<script src="js/prompts.js"></script>
-<script src="js/sprites.js"></script>
-<script src="js/bestiary.js"></script>
-<script src="js/gen.js"></script>
+<script src="js/data.js?v=42"></script>
+<script src="js/prompts.js?v=42"></script>
+<script src="js/sprites.js?v=42"></script>
+<script src="js/bestiary.js?v=42"></script>
+<script src="js/gen.js?v=42"></script>
 <script>
 (function () {
   'use strict';
   const DF = window.DF, $ = (s) => document.querySelector(s);
   const ELS = ['fire', 'ice', 'lightning', 'poison', 'earth', 'light', 'shadow', 'nature'];
   let kind = '', current = null, selCard = null;
+  // Where a picture comes from. Older copies of js/sprites.js can't say, so fall back gracefully.
+  const oldSprites = typeof DF.monsterSource !== 'function';
+  function source(spec) {
+    if (!oldSprites) return DF.monsterSource(spec);
+    const set = typeof DF.monsterSet === 'function' ? DF.monsterSet(spec) : '';
+    return { kind: DF.bodyType(spec), set, from: set ? 'sheet' : '(upload the new js/sprites.js to see this)' };
+  }
 
   $('#el').innerHTML = ['(from name)'].concat(ELS).map((e) => `<option>${e}</option>`).join('');
   $('#el').value = 'fire';
@@ -138,7 +145,7 @@
     g.drawImage(sp.left, Math.round(cv.width * 0.62 - mw / 2), ground - mh, mw, mh);
     hero.onload = () => { g.drawImage(hero, Math.round(cv.width * 0.2), ground - hero.height * Z, hero.width * Z, hero.height * Z); };
     // Facts.
-    const src = DF.monsterSource(spec), best = DF.bestiaryFor && DF.bestiaryFor(spec.name);
+    const src = source(spec), best = DF.bestiaryFor && DF.bestiaryFor(spec.name);
     const big = sp.w > 16 || sp.h > 16, tiny = sp.w < 6 || sp.h < 5;
     $('#facts').innerHTML = `
       <dt>Name</dt><dd>${esc(spec.name)}</dd>
@@ -162,7 +169,7 @@
     const box = document.createElement('div'); box.className = 'cv';
     const c = document.createElement('canvas'); const sp = DF.monsterSprite(spec, '');
     const z = Math.max(2, Math.min(5, Math.floor(70 / Math.max(sp.w, sp.h)))); draw(c, spec, '', z); box.appendChild(c);
-    const src = DF.monsterSource(spec);
+    const src = source(spec);
     d.innerHTML = '';
     d.appendChild(box);
     const t = document.createElement('div');
@@ -214,6 +221,7 @@
     const st = $('#status');
     if (found) st.textContent = `Sprite sheets loaded: ${found.sets || 0} monster sets`;
     else { st.textContent = 'Sprite sheets not loaded (open this page from the website) — showing the built-in drawings'; st.classList.add('off'); }
+    if (oldSprites) { st.textContent += ' · js/sprites.js on the site is an older copy, re-upload it'; st.classList.add('off'); }
     start();
   });
 }());
