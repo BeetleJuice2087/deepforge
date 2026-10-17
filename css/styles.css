@@ -398,3 +398,20 @@ body.touch .inv-foot .keyhint { display: none; }
 
 .book .special { margin: 4px 0; font-size: 0.85rem; color: var(--ash); }
 .book .special b { color: #ffb070; margin-right: 4px; }
+
+/* Comparing a find with what you're wearing */
+.cmp { margin: 10px 0 4px; padding: 8px 10px; background: #120e16; box-shadow: inset 0 0 0 1px #2e2638; }
+.cmp-head { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: var(--ash); margin-bottom: 4px; }
+.cmp-head img { width: 22px; image-rendering: pixelated; }
+.cmp-head span { flex: 1; min-width: 0; }
+.cmp-v { flex: none; font-size: 0.78rem; padding: 2px 7px; background: #2a2632; color: var(--ash); white-space: nowrap; }
+.cmp-v.up { background: #1d3a24; color: #72e07e; } .cmp-v.down { background: #3a1e20; color: #ff7a6a; }
+.cmp-row { display: grid; grid-template-columns: 74px 3ch 22px 3ch 1fr; align-items: baseline; gap: 2px; font-size: 0.92rem; color: var(--ash); padding: 1px 0; }
+.cmp-row em { font-style: normal; color: #e8e0d0; text-align: right; }
+.cmp-row i { font-style: normal; text-align: center; opacity: 0.6; }
+.cmp-row strong { padding-left: 10px; color: var(--ash); } .cmp-row .up { color: #72e07e; } .cmp-row .down { color: #ff7a6a; }
+.cmp-row.wide { grid-template-columns: 74px 1fr; } .cmp-row.wide p { margin: 0; color: #e8e0d0; } .cmp-row.wide b { font-weight: 600; margin-right: 6px; }
+.cmp-hint { margin: 10px 0 4px; font-size: 0.8rem; }
+.tile { position: relative; } .tile-v { position: absolute; top: 4px; right: 6px; font-style: normal; font-size: 0.8rem; }
+.tile-v.up { color: #72e07e; } .tile-v.down { color: #ff7a6a; }
+.toast .t-up { color: #72e07e; } .toast .t-down { color: #ff7a6a; }
