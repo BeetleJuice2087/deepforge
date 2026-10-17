@@ -307,7 +307,42 @@
       closeSheet();
     };
   }
-  function openStall(st) {
+  /* ---------- The merchant: buy from his stalls, sell from your bag ---------- */
+  function openTrade(shop, tab, pick) {
+    tab = tab || 'buy';
+    const run = G.run, gold = G.meta.gold;
+    const tabs = `<div class="trade-tabs"><button class="${tab === 'buy' ? 'on' : ''}" data-tab="buy">Buy</button><button class="${tab === 'sell' ? 'on' : ''}" data-tab="sell">Sell</button></div>`;
+    let body = '';
+    if (tab === 'buy') {
+      const rows = shop.stalls.map((st, i) => {
+        const pic = st.kind === 'item' ? DF.bigPicture('item', st.item, 3) : st.kind === 'potion' ? DF.bigPicture('item', { icon: 'potion', colors: ['#ff4a6a', '#cfc8dc'], element: 'none' }, 3) : DF.bigPicture('item', { icon: 'scroll', colors: ['#e8d8a8', DF.EL_COLOR[DF.SPELLS[st.spell].el]], element: 'none' }, 3);
+        const name = st.kind === 'item' ? st.item.name : st.kind === 'potion' ? 'Healing potion' : DF.SPELLS[st.spell].name + ' scroll';
+        const col = st.kind === 'item' ? DF.RAR_COLOR[st.item.rarity] : st.kind === 'potion' ? '#ff6a8a' : DF.EL_COLOR[DF.SPELLS[st.spell].el];
+        const desc = st.kind === 'item' ? [statLines(st.item).join(' \u00b7 '), st.item.description].filter(Boolean).join(' \u2014 ') : st.kind === 'potion' ? 'Heals nearly half your health and cures poison.' : DF.SPELLS[st.spell].text;
+        return `<button class="trade-row ${st.sold ? 'sold' : ''}" data-buy="${i}" ${st.sold ? 'disabled' : ''}><img src="${pic}" alt=""><span><strong style="color:${col}">${esc(name)}${st.kind === 'item' ? tileArrow(st.item) : ''}</strong><small>${esc(desc)}</small></span><b class="${gold >= st.price ? '' : 'short'}">${st.sold ? 'Sold' : st.price + 'g'}</b></button>`;
+      }).join('');
+      body = `<div class="trade-list">${rows}</div>`;
+    } else if (pick != null && run.bag[pick]) {
+      const it = run.bag[pick], g = G.sellPrice(it);
+      body = `${itemBlock(it, false)}${compareBlock(it)}<div class="shop-price"><span>He offers <b>${g} gold</b></span><small>You have ${gold}</small></div>
+        <div class="row"><button class="btn primary" data-a="sell" data-i="${pick}">Sell for ${g}g</button><button class="btn ghost" data-tab="sell">Back</button></div>`;
+    } else {
+      const items = run.bag.map((b, i) => b ? `<button class="tile" data-pick="${i}" style="--r:${DF.RAR_COLOR[b.rarity]}">${tileArrow(b)}<img src="${DF.bigPicture('item', b, 3)}" alt=""><span>${esc(b.name)}</span><em class="tile-price">${G.sellPrice(b)}g</em></button>` : '').join('');
+      body = items ? `<p class="sub cmp-hint">Tap something in your bag to see his offer. ▼ weaker than what you wear</p><div class="grid">${items}</div>`
+        : `<p class="inv-empty">Your bag is empty. He only buys what you carry in your bag, not what you're wearing.</p>`;
+    }
+    const s = openSheet(`<h2 class="title">The merchant</h2><p class="sub">${tab === 'buy' ? '“Have a look. Everything is for sale.”' : '“Let’s see what you dragged up from the deep.”'} <span class="trade-gold">${gold} gold</span></p>
+      ${tabs}${body}${tab === 'sell' && pick != null && run.bag[pick] ? '' : '<div class="row"><button class="btn ghost" data-a="close" data-focus>Done</button></div>'}`);
+    s.onclick = (e) => {
+      const t = e.target.closest('[data-tab],[data-buy],[data-pick],[data-a]'); if (!t) return;
+      if (t.dataset.tab) { openTrade(shop, t.dataset.tab); return; }
+      if (t.dataset.buy != null) { openStall(shop.stalls[+t.dataset.buy], shop); return; }
+      if (t.dataset.pick != null) { openTrade(shop, 'sell', +t.dataset.pick); return; }
+      if (t.dataset.a === 'sell') { const it = run.bag[+t.dataset.i], g = G.sellItem(+t.dataset.i); if (g) toast(`Sold <b style="color:${DF.RAR_COLOR[it.rarity]}">${esc(it.name)}</b> for <b style="color:#ffcf4a">${g} gold</b>.`, 2400, true); openTrade(shop, 'sell'); return; }
+      if (t.dataset.a === 'close') closeSheet();
+    };
+  }
+  function openStall(st, shop) {
     const gold = G.meta.gold, short = Math.max(0, st.price - gold);
     let body;
     if (st.kind === 'item') body = itemBlock(st.item, true) + compareBlock(st.item);
@@ -316,13 +351,13 @@
     else body = spellBlock(st.spell, 'Spell scroll for sale');
     const s = openSheet(`<p class="sub">The merchant holds it up to the lantern.</p>${body}
       <div class="shop-price"><span>Price <b>${st.price} gold</b></span><small>You have ${gold}</small></div>
-      <div class="row"><button class="btn primary" data-a="buy" data-focus ${short ? 'aria-disabled="true"' : ''}>${short ? `Need ${short} more` : 'Buy'}</button><button class="btn ghost" data-a="close">Not now</button></div>`, 'item');
+      <div class="row"><button class="btn primary" data-a="buy" data-focus ${short ? 'aria-disabled="true"' : ''}>${short ? `Need ${short} more` : 'Buy'}</button><button class="btn ghost" data-a="close">${shop ? 'Back' : 'Not now'}</button></div>`, 'item');
     s.onclick = (e) => {
       const t = e.target.closest('[data-a]'); if (!t) return;
-      if (t.dataset.a === 'close') { closeSheet(); return; }
+      if (t.dataset.a === 'close') { if (shop) openTrade(shop, 'buy'); else closeSheet(); return; }
       const why = G.buyStall(st);
       if (why) { toast(why); return; }
-      closeSheet();
+      if (shop) openTrade(shop, 'buy'); else closeSheet();
       toast(st.kind === 'item' ? `Bought <b style="color:${DF.RAR_COLOR[st.item.rarity]}">${esc(st.item.name)}</b>.` : st.kind === 'potion' ? 'Bought a potion.' : 'Bought a scroll. Pick it up to learn it.', 2400, true);
     };
   }
@@ -667,7 +702,7 @@
       <h3 class="stat-h">Treasure</h3>
       <ul class="statgrid">
         ${tile(fmt(st.goldTotal), 'gold earned')}${tile(fmt(st.items), 'items found')}${tile(fmt(st.legendaries), 'legendaries found')}
-        ${tile(fmt(st.forged), 'things forged')}${tile(fmt(st.bought), 'things bought')}${tile(fmt(st.scrolls), 'scrolls learned')}${tile(fmt(st.spells), 'scroll spells cast')}${tile(Object.keys(m.books.mon).length, 'monsters in the book')}${tile(Object.keys(m.books.item).length, 'items in the book')}
+        ${tile(fmt(st.forged), 'things forged')}${tile(fmt(st.bought), 'things bought')}${tile(fmt(st.sold || 0), 'things sold')}${tile(fmt(st.scrolls), 'scrolls learned')}${tile(fmt(st.spells), 'scroll spells cast')}${tile(Object.keys(m.books.mon).length, 'monsters in the book')}${tile(Object.keys(m.books.item).length, 'items in the book')}
       </ul>
       ${item ? `<h3 class="stat-h">Best find</h3><div class="stat-row"><img class="pix" src="${DF.bigPicture('item', item, 4)}" alt=""><span><b style="color:${DF.RAR_COLOR[item.rarity]}">${esc(item.name)}</b><small>${DF.RARITY[item.rarity]} ${esc(item.type || '')}</small></span></div>` : ''}
       ${prey.length ? `<h3 class="stat-h">Favourite prey</h3>${prey.map((b) => `<div class="stat-row"><img class="pix" src="${DF.bigPicture('monster', b.spec, 3)}" alt=""><span><b>${esc(b.spec.name)}</b><small>defeated ${fmt(b.kills)} times</small></span></div>`).join('')}` : ''}
@@ -780,7 +815,7 @@
     const off = AI.onChange(() => { if ($('#modal').hidden || !s.querySelector('#s-on')) { off(); return; } if (st.mode === 'device' && document.activeElement && document.activeElement.tagName !== 'INPUT') draw(); });
   }
 
-  DF.UI = { openInventory, toggleInventory, openStats, openSwap, openScroll, openStall, toast, banner, discovery, bossBar, setAction, renderSlots, openItem, openForge, confirmStairs, showDeath, showCamp, waitForDream, togglePause, pause: () => pause(), esc, isTouch: () => touch, openSettings };
+  DF.UI = { openInventory, toggleInventory, openStats, openSwap, openScroll, openStall, openTrade, toast, banner, discovery, bossBar, setAction, renderSlots, openItem, openForge, confirmStairs, showDeath, showCamp, waitForDream, togglePause, pause: () => pause(), esc, isTouch: () => touch, openSettings };
   // Start up.
   setTouch(touch);
   $('#potion-img').src = DF.bigPicture('item', { icon: 'potion', colors: ['#ff4a6a', '#cfc8dc'], element: 'none' }, 3);

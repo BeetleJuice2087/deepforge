@@ -20,7 +20,7 @@
   function defaultMeta() {
     return { v: 1, gold: 0, up: { vit: 0, str: 0, tough: 0, fort: 0, satchel: 0 }, books: { mon: {}, item: {}, recipes: [] },
       stats: { runs: 0, deepest: 0, kills: 0, forged: 0, bosses: 0, goldTotal: 0, elites: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, hits: 0, crits: 0, weakHits: 0,
-        swings: 0, bashes: 0, potions: 0, chests: 0, mimics: 0, rooms: 0, descents: 0, rerolls: 0, items: 0, legendaries: 0, walked: 0, playSecs: 0, floorsAI: 0, floorsHand: 0, bought: 0, rests: 0, scrolls: 0, spells: 0, pots: 0 },
+        swings: 0, bashes: 0, potions: 0, chests: 0, mimics: 0, rooms: 0, descents: 0, rerolls: 0, items: 0, legendaries: 0, walked: 0, playSecs: 0, floorsAI: 0, floorsHand: 0, bought: 0, sold: 0, rests: 0, scrolls: 0, spells: 0, pots: 0 },
       records: { killedBy: {}, elemKills: {}, bigHit: null, bestRun: null, longestRun: 0, bestItem: null }, run: null, tips: {} };
   }
   let meta = defaultMeta();
@@ -1016,9 +1016,20 @@
     updateHUD(true);
   }
   /* ---- The merchant ---- */
+  const RAR_PRICE = [1, 1.5, 2.3, 3.5, 5];
+  // What the merchant pays for something from your bag: about a third of what he'd sell it for.
+  function sellPrice(it) { if (!it) return 0; const lvl = Math.max(1, it.lvl || run.floorN); return Math.max(3, Math.round((18 + 10 * lvl) * RAR_PRICE[it.rarity || 0] * 0.35 * (it.forged ? 1.2 : 1))); }
+  function sellItem(i) {
+    const it = run.bag[i]; if (!it) return 0;
+    const g = sellPrice(it);
+    run.bag[i] = null; meta.gold += g; bump('sold'); SND.coin(P.x / LW);
+    floatText(P.x, P.y - 10, '+' + g + 'g', '#ffcf4a');
+    updateHUD(true); saveMeta(true); saveRun();
+    return g;
+  }
   function makeShop() {
     const n = run.floorN, luck = stats().luckF, xs = [5 * T + 4, 7 * T + 4, 9 * T + 4], y = 6 * T + 2;
-    const priceFor = (it) => Math.round((18 + 10 * n) * [1, 1.5, 2.3, 3.5, 5][it.rarity]);
+    const priceFor = (it) => Math.round((18 + 10 * n) * RAR_PRICE[it.rarity]);
     const stalls = [];
     const it = makeItem(lootSpec(), rollRarity(n, luck, 1), n);
     stalls.push({ kind: 'item', item: it, price: priceFor(it) });
@@ -1198,6 +1209,7 @@
       let best = null, bd = 10;
       for (const st of room.shop.stalls) { const d = Math.hypot(P.x - st.x, P.y - st.y); if (!st.sold && d < bd) { bd = d; best = st; } }
       if (best) { const st = best; action = { label: `Buy \u00b7 ${st.price}g`, fn: () => DF.UI.openStall(st) }; }
+      else if (Math.hypot(P.x - room.shop.mx, P.y - room.shop.my) < 16) { const sh = room.shop; action = { label: 'Trade', fn: () => DF.UI.openTrade(sh) }; }
     }
     if (!action && scrollHere) { const p = scrollHere; action = { label: 'Read scroll', fn: () => DF.UI.openScroll(p) }; }
     if (!action && swapWith) { const p = swapWith; action = { label: 'Swap', fn: () => DF.UI.openSwap(p) }; }
@@ -2444,7 +2456,7 @@
     meta: { get: () => meta }, run: { get: () => run }, P: { get: () => P }, room: { get: () => room },
   });
   Object.assign(G, {
-    saveMeta, UPGRADES, buyUpgrade, buyStall, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
+    saveMeta, UPGRADES, buyUpgrade, buyStall, sellPrice, sellItem, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
     prepareNextRun, resize, updateHUD, drawMinimap,
     resetAll() { localStorage.removeItem(META_KEY); meta = defaultMeta(); saveMeta(true); },
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },
