@@ -314,6 +314,15 @@
     for (const [x, y] of cut) out[y] = out[y].slice(0, x) + '.' + out[y].slice(x + 1);
     return trimRows(out);
   }
+  // Where a monster's picture comes from (for the Monster Lab page).
+  DF.monsterSource = function (spec) {
+    const name = String(spec.name || 'Monster'), kind = DF.bodyType(spec), st = pickSet(spec, kind);
+    if (st) return { from: st.looks ? 'sheet (whole looks)' : 'sheet (top + middle + bottom)', set: st.name, kind };
+    const pk = PART_KINDS[kind] || BEAST_KINDS[kind];
+    if (pk && seeded(name + '|parts')(100) < pk[3] * 100) return { from: 'parts sheets', set: '', kind };
+    if (SHAPES[kind]) return { from: 'monsters.png row', set: '', kind };
+    return { from: 'drawn by code', set: '', kind };
+  };
   DF.monsterSet = (spec) => { const st = pickSet(spec, DF.bodyType(spec)); return st ? st.name : ''; };
   function creatureRows(spec) {
     const name = String(spec.name || 'Monster'), r = seeded(name), kind = DF.bodyType(spec);
