@@ -1,0 +1,1436 @@
+{
+ "keys": {
+  "a": "#ff0000",
+  "b": "#00ff00",
+  "c": "#0000ff",
+  "d": "#ffffff",
+  "e": "#ff00ff",
+  "f": "#00ffff"
+ },
+ "cols": 8,
+ "gap": 1,
+ "sheets": [
+  {
+   "file": "parts/tops.png",
+   "type": "parts",
+   "set": "tops",
+   "box": [
+    7,
+    3
+   ],
+   "names": [
+    "head",
+    "horns",
+    "hood",
+    "helmet",
+    "skull",
+    "hat",
+    "ears",
+    "crown",
+    "cyclops",
+    "antenna"
+   ]
+  },
+  {
+   "file": "parts/middles.png",
+   "type": "parts",
+   "set": "mids",
+   "box": [
+    7,
+    3
+   ],
+   "names": [
+    "plain",
+    "sword",
+    "shield",
+    "robe",
+    "staff",
+    "bow",
+    "wings",
+    "ribs",
+    "brute",
+    "cape"
+   ]
+  },
+  {
+   "file": "parts/bottoms.png",
+   "type": "parts",
+   "set": "bots",
+   "box": [
+    7,
+    2
+   ],
+   "names": [
+    "legs",
+    "stance",
+    "hem",
+    "wisp",
+    "tentacles",
+    "tail",
+    "bones",
+    "puddle",
+    "spider",
+    "stumps"
+   ]
+  },
+  {
+   "file": "parts/beast-backs.png",
+   "type": "parts",
+   "set": "backs",
+   "box": [
+    4,
+    6
+   ],
+   "names": [
+    "tail up",
+    "long tail",
+    "spines",
+    "bushy",
+    "stinger",
+    "fin",
+    "club"
+   ]
+  },
+  {
+   "file": "parts/beast-middles.png",
+   "type": "parts",
+   "set": "middles",
+   "box": [
+    3,
+    6
+   ],
+   "names": [
+    "plain",
+    "spikes",
+    "wings",
+    "plates",
+    "ribs",
+    "stripes",
+    "hump",
+    "shell"
+   ]
+  },
+  {
+   "file": "parts/beast-heads.png",
+   "type": "parts",
+   "set": "fronts",
+   "box": [
+    4,
+    6
+   ],
+   "names": [
+    "dog",
+    "horned",
+    "beak",
+    "tusks",
+    "jaws",
+    "long neck",
+    "skull",
+    "antlers"
+   ]
+  },
+  {
+   "file": "monsters.png",
+   "type": "shapes",
+   "box": [
+    12,
+    12
+   ],
+   "rows": [
+    "crab",
+    "octopus",
+    "jelly",
+    "bat",
+    "ghost",
+    "frog",
+    "bee",
+    "snail",
+    "tree",
+    "mushroom",
+    "flower",
+    "flame",
+    "cloud",
+    "star",
+    "orb",
+    "spiky",
+    "flutter",
+    "skeleton",
+    "zombie",
+    "goblin",
+    "orc",
+    "cultist",
+    "knight",
+    "imp",
+    "demon",
+    "slime",
+    "mimic",
+    "snake",
+    "bonebeast",
+    "golem",
+    "lizardman",
+    "troll",
+    "minotaur",
+    "vampire",
+    "mummy",
+    "lich",
+    "wizard",
+    "rogue",
+    "archer",
+    "spearman",
+    "shieldbearer",
+    "medusa",
+    "gargoyle",
+    "harpy",
+    "wraith",
+    "banshee",
+    "reaper",
+    "ghoul",
+    "scorpion",
+    "beetle",
+    "centipede",
+    "worm",
+    "wasp",
+    "lobster",
+    "shark",
+    "angler",
+    "mindflayer",
+    "eyeball",
+    "beholder",
+    "horror",
+    "flytrap",
+    "crystal",
+    "tentacle",
+    "slug",
+    "basilisk",
+    "blade",
+    "spider",
+    "blob",
+    "serpent",
+    "fish",
+    "bird",
+    "bug",
+    "horse"
+   ]
+  },
+  {
+   "set": "cultist",
+   "file": "monsters/cultist.png",
+   "type": "layers",
+   "box": [
+    12,
+    10
+   ],
+   "match": [
+    "cultist",
+    "acolyte",
+    "zealot",
+    "heretic"
+   ],
+   "kinds": [
+    "cultist"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "cultist_leader",
+   "file": "monsters/cultist_leader.png",
+   "type": "layers",
+   "box": [
+    11,
+    11
+   ],
+   "match": [
+    "cultist leader",
+    "cult leader",
+    "high priest",
+    "archcultist",
+    "cult master"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "dark_priest",
+   "file": "monsters/dark_priest.png",
+   "type": "layers",
+   "box": [
+    11,
+    11
+   ],
+   "match": [
+    "dark priest",
+    "priest",
+    "bishop",
+    "cleric",
+    "abbot"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "goblin_archer",
+   "file": "monsters/goblin_archer.png",
+   "type": "layers",
+   "box": [
+    9,
+    9
+   ],
+   "match": [
+    "goblin archer",
+    "goblin bowman",
+    "goblin hunter",
+    "goblin scout"
+   ],
+   "kinds": [
+    "archer"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "orc_shaman",
+   "file": "monsters/orc_shaman.png",
+   "type": "layers",
+   "box": [
+    11,
+    11
+   ],
+   "match": [
+    "orc shaman",
+    "shaman",
+    "witch doctor",
+    "hexer"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "skeleton_mage",
+   "file": "monsters/skeleton_mage.png",
+   "type": "layers",
+   "box": [
+    11,
+    12
+   ],
+   "match": [
+    "skeleton mage",
+    "skeletal mage",
+    "bone mage",
+    "necromancer",
+    "lich"
+   ],
+   "kinds": [
+    "lich"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "zombie_brute",
+   "file": "monsters/zombie_brute.png",
+   "type": "layers",
+   "box": [
+    12,
+    12
+   ],
+   "match": [
+    "zombie brute",
+    "zombie hulk",
+    "rotting brute",
+    "plague brute"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "axe_brute",
+   "file": "monsters/axe_brute.png",
+   "type": "layers",
+   "box": [
+    13,
+    11
+   ],
+   "match": [
+    "axe brute",
+    "axeman",
+    "axe",
+    "berserker",
+    "executioner",
+    "brute"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "halberd",
+   "file": "monsters/halberd.png",
+   "type": "layers",
+   "box": [
+    11,
+    11
+   ],
+   "match": [
+    "halberd",
+    "halberdier",
+    "pikeman",
+    "pike",
+    "glaive"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "knight_spear",
+   "file": "monsters/knight_spear.png",
+   "type": "layers",
+   "box": [
+    11,
+    12
+   ],
+   "match": [
+    "spear knight",
+    "knight spear",
+    "lancer",
+    "lance",
+    "dragoon"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "shield_bearer",
+   "file": "monsters/shield_bearer.png",
+   "type": "layers",
+   "box": [
+    11,
+    10
+   ],
+   "match": [
+    "shield bearer",
+    "shieldbearer",
+    "shield",
+    "defender",
+    "bulwark",
+    "sentinel"
+   ],
+   "kinds": [
+    "shieldbearer"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "spearman",
+   "file": "monsters/spearman.png",
+   "type": "layers",
+   "box": [
+    10,
+    11
+   ],
+   "match": [
+    "spearman",
+    "spearmen",
+    "spear",
+    "hoplite",
+    "javelin"
+   ],
+   "kinds": [
+    "spearman"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "sword_guard",
+   "file": "monsters/sword_guard.png",
+   "type": "layers",
+   "box": [
+    11,
+    10
+   ],
+   "match": [
+    "sword guard",
+    "guard",
+    "guardsman",
+    "swordsman",
+    "soldier",
+    "warden",
+    "sellsword",
+    "mercenary"
+   ],
+   "kinds": [
+    "knight"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "assassin",
+   "file": "monsters/assassin.png",
+   "type": "layers",
+   "box": [
+    11,
+    10
+   ],
+   "match": [
+    "assassin",
+    "killer",
+    "stalker",
+    "cutthroat"
+   ],
+   "kinds": [
+    "rogue"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "bandit",
+   "file": "monsters/bandit.png",
+   "type": "layers",
+   "box": [
+    11,
+    10
+   ],
+   "match": [
+    "bandit",
+    "brigand",
+    "outlaw",
+    "raider",
+    "marauder",
+    "pirate"
+   ],
+   "kinds": [
+    "rogue"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "banshee",
+   "file": "monsters/banshee.png",
+   "type": "layers",
+   "box": [
+    8,
+    12
+   ],
+   "match": [
+    "banshee",
+    "wailer",
+    "keener"
+   ],
+   "kinds": [
+    "banshee"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "ninja",
+   "file": "monsters/ninja.png",
+   "type": "layers",
+   "box": [
+    10,
+    10
+   ],
+   "match": [
+    "ninja",
+    "shinobi"
+   ],
+   "kinds": [
+    "rogue"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "thief",
+   "file": "monsters/thief.png",
+   "type": "layers",
+   "box": [
+    10,
+    10
+   ],
+   "match": [
+    "thief",
+    "thieves",
+    "rogue",
+    "pickpocket",
+    "cutpurse",
+    "burglar"
+   ],
+   "kinds": [
+    "rogue"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "wraith_knight",
+   "file": "monsters/wraith_knight.png",
+   "type": "layers",
+   "box": [
+    13,
+    11
+   ],
+   "match": [
+    "wraith knight",
+    "death knight",
+    "dread knight",
+    "black knight",
+    "revenant",
+    "doom knight"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "elemental",
+   "file": "monsters/elemental.png",
+   "type": "layers",
+   "box": [
+    8,
+    10
+   ],
+   "match": [
+    "elemental",
+    "fire spirit",
+    "flame spirit"
+   ],
+   "kinds": [
+    "flame"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "eyebeast",
+   "file": "monsters/eyebeast.png",
+   "type": "layers",
+   "box": [
+    8,
+    9
+   ],
+   "match": [
+    "eye beast",
+    "eyebeast",
+    "watcher",
+    "eyeball"
+   ],
+   "kinds": [
+    "eyeball"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "fungus",
+   "file": "monsters/fungus.png",
+   "type": "layers",
+   "box": [
+    8,
+    8
+   ],
+   "match": [
+    "fungus",
+    "fungal",
+    "fungi",
+    "sporeling",
+    "spore"
+   ],
+   "kinds": [
+    "mushroom"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "lizardman",
+   "file": "monsters/lizardman.png",
+   "type": "layers",
+   "box": [
+    8,
+    9
+   ],
+   "match": [
+    "lizardman",
+    "lizard man",
+    "lizardfolk",
+    "saurian"
+   ],
+   "kinds": [
+    "lizardman"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "ogre",
+   "file": "monsters/ogre.png",
+   "type": "layers",
+   "box": [
+    9,
+    10
+   ],
+   "match": [
+    "ogre",
+    "troll",
+    "giant",
+    "hulk",
+    "cyclops"
+   ],
+   "kinds": [
+    "troll"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "ooze",
+   "file": "monsters/ooze.png",
+   "type": "layers",
+   "box": [
+    8,
+    7
+   ],
+   "match": [
+    "ooze",
+    "slime",
+    "sludge",
+    "goo",
+    "gel",
+    "blob",
+    "jelly"
+   ],
+   "kinds": [
+    "slime",
+    "blob"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "plant",
+   "file": "monsters/plant.png",
+   "type": "layers",
+   "box": [
+    8,
+    8
+   ],
+   "match": [
+    "plant",
+    "flytrap",
+    "man-eater",
+    "bloom",
+    "flower",
+    "vine",
+    "thorn"
+   ],
+   "kinds": [
+    "flytrap",
+    "flower"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "troglodyte",
+   "file": "monsters/troglodyte.png",
+   "type": "layers",
+   "box": [
+    8,
+    9
+   ],
+   "match": [
+    "troglodyte",
+    "caveman",
+    "trog"
+   ],
+   "kinds": [
+    "ghoul"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "demon",
+   "file": "monsters/demon.png",
+   "type": "layers",
+   "box": [
+    12,
+    12
+   ],
+   "match": [
+    "demon",
+    "fiend",
+    "devil",
+    "hellion"
+   ],
+   "kinds": [
+    "demon"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "ghost",
+   "file": "monsters/ghost.png",
+   "type": "layers",
+   "box": [
+    9,
+    11
+   ],
+   "match": [
+    "ghost",
+    "spirit",
+    "phantom",
+    "spook",
+    "poltergeist"
+   ],
+   "kinds": [
+    "ghost"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "imp",
+   "file": "monsters/imp.png",
+   "type": "layers",
+   "box": [
+    9,
+    10
+   ],
+   "match": [
+    "imp",
+    "gremlin",
+    "sprite"
+   ],
+   "kinds": [
+    "imp"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "knight",
+   "file": "monsters/knight.png",
+   "type": "layers",
+   "box": [
+    8,
+    10
+   ],
+   "match": [
+    "knight",
+    "paladin",
+    "templar",
+    "crusader"
+   ],
+   "kinds": [
+    "knight"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "mimic",
+   "file": "monsters/mimic.png",
+   "type": "layers",
+   "box": [
+    9,
+    8
+   ],
+   "match": [
+    "mimic",
+    "chest",
+    "coffer"
+   ],
+   "kinds": [
+    "mimic"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "orc",
+   "file": "monsters/orc.png",
+   "type": "layers",
+   "box": [
+    9,
+    9
+   ],
+   "match": [
+    "orc",
+    "orcish",
+    "warlord"
+   ],
+   "kinds": [
+    "orc"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "angler",
+   "file": "monsters/angler.png",
+   "type": "layers",
+   "box": [
+    12,
+    10
+   ],
+   "match": [
+    "angler",
+    "anglerfish",
+    "lanternfish"
+   ],
+   "kinds": [
+    "angler"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "fish",
+   "file": "monsters/fish.png",
+   "type": "layers",
+   "box": [
+    10,
+    7
+   ],
+   "match": [
+    "fish",
+    "carp",
+    "minnow",
+    "trout"
+   ],
+   "kinds": [
+    "fish"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "piranha",
+   "file": "monsters/piranha.png",
+   "type": "layers",
+   "box": [
+    10,
+    8
+   ],
+   "match": [
+    "piranha",
+    "biter",
+    "barracuda"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "rat",
+   "file": "monsters/rat.png",
+   "type": "layers",
+   "box": [
+    11,
+    6
+   ],
+   "match": [
+    "rat",
+    "mouse",
+    "mice",
+    "vermin",
+    "rodent"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "shark",
+   "file": "monsters/shark.png",
+   "type": "layers",
+   "box": [
+    11,
+    9
+   ],
+   "match": [
+    "shark"
+   ],
+   "kinds": [
+    "shark"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "toad",
+   "file": "monsters/toad.png",
+   "type": "layers",
+   "box": [
+    9,
+    8
+   ],
+   "match": [
+    "toad",
+    "frog"
+   ],
+   "kinds": [
+    "frog"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "beetle",
+   "file": "monsters/beetle.png",
+   "type": "layers",
+   "box": [
+    8,
+    8
+   ],
+   "match": [
+    "beetle",
+    "scarab",
+    "bug",
+    "roach",
+    "weevil"
+   ],
+   "kinds": [
+    "beetle",
+    "bug"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "centipede",
+   "file": "monsters/centipede.png",
+   "type": "layers",
+   "box": [
+    10,
+    7
+   ],
+   "match": [
+    "centipede",
+    "millipede",
+    "crawler"
+   ],
+   "kinds": [
+    "centipede"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "scorpion",
+   "file": "monsters/scorpion.png",
+   "type": "layers",
+   "box": [
+    9,
+    9
+   ],
+   "match": [
+    "scorpion"
+   ],
+   "kinds": [
+    "scorpion"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "shade",
+   "file": "monsters/shade.png",
+   "type": "layers",
+   "box": [
+    7,
+    8
+   ],
+   "match": [
+    "shade",
+    "umbra"
+   ],
+   "kinds": [
+    "ghost"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "specter",
+   "file": "monsters/specter.png",
+   "type": "layers",
+   "box": [
+    8,
+    9
+   ],
+   "match": [
+    "specter",
+    "spectre",
+    "apparition",
+    "haunt"
+   ],
+   "kinds": [
+    "ghost"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "wraith",
+   "file": "monsters/wraith.png",
+   "type": "layers",
+   "box": [
+    8,
+    9
+   ],
+   "match": [
+    "wraith"
+   ],
+   "kinds": [
+    "wraith"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "cloud",
+   "file": "monsters/cloud.png",
+   "type": "layers",
+   "box": [
+    8,
+    6
+   ],
+   "match": [
+    "cloud",
+    "fog",
+    "mist",
+    "vapour",
+    "vapor",
+    "smog"
+   ],
+   "kinds": [
+    "cloud"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "mushroom",
+   "file": "monsters/mushroom.png",
+   "type": "layers",
+   "box": [
+    6,
+    7
+   ],
+   "match": [
+    "mushroom",
+    "toadstool",
+    "shroom"
+   ],
+   "kinds": [
+    "mushroom"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "orb",
+   "file": "monsters/orb.png",
+   "type": "layers",
+   "box": [
+    6,
+    7
+   ],
+   "match": [
+    "orb",
+    "sphere",
+    "bubble"
+   ],
+   "kinds": [
+    "orb"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "spiky",
+   "file": "monsters/spiky.png",
+   "type": "layers",
+   "box": [
+    7,
+    6
+   ],
+   "match": [
+    "urchin",
+    "spike",
+    "spiky",
+    "burr",
+    "spikeball"
+   ],
+   "kinds": [
+    "spiky"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "star",
+   "file": "monsters/star.png",
+   "type": "layers",
+   "box": [
+    7,
+    6
+   ],
+   "match": [
+    "star",
+    "comet",
+    "meteor",
+    "starfish"
+   ],
+   "kinds": [
+    "star"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "bonebeast",
+   "file": "monsters/bonebeast.png",
+   "type": "layers",
+   "box": [
+    9,
+    7
+   ],
+   "match": [
+    "bone beast",
+    "bonebeast",
+    "bone hound",
+    "skeletal hound",
+    "bone dog",
+    "bone wolf"
+   ],
+   "kinds": [
+    "bonebeast"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "goblin",
+   "file": "monsters/goblin.png",
+   "type": "layers",
+   "box": [
+    8,
+    7
+   ],
+   "match": [
+    "goblin",
+    "hobgoblin"
+   ],
+   "kinds": [
+    "goblin"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "golem",
+   "file": "monsters/golem.png",
+   "type": "layers",
+   "box": [
+    9,
+    8
+   ],
+   "match": [
+    "golem",
+    "construct",
+    "automaton",
+    "clockwork"
+   ],
+   "kinds": [
+    "golem"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "snake",
+   "file": "monsters/snake.png",
+   "type": "layers",
+   "box": [
+    7,
+    8
+   ],
+   "match": [
+    "snake",
+    "serpent",
+    "viper",
+    "cobra",
+    "asp",
+    "adder"
+   ],
+   "kinds": [
+    "snake",
+    "serpent"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "spider",
+   "file": "monsters/spider.png",
+   "type": "layers",
+   "box": [
+    9,
+    6
+   ],
+   "match": [
+    "spider",
+    "tarantula",
+    "arachnid",
+    "weaver"
+   ],
+   "kinds": [
+    "spider"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "zombie",
+   "file": "monsters/zombie.png",
+   "type": "layers",
+   "box": [
+    10,
+    11
+   ],
+   "match": [
+    "zombie",
+    "undead",
+    "corpse",
+    "shambler",
+    "rotter"
+   ],
+   "kinds": [
+    "zombie"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "cave_slug",
+   "file": "monsters/cave_slug.png",
+   "type": "looks",
+   "box": [
+    14,
+    6
+   ],
+   "match": [
+    "slug",
+    "cave slug"
+   ],
+   "kinds": [
+    "slug"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "gargoyle",
+   "file": "monsters/gargoyle.png",
+   "type": "looks",
+   "box": [
+    13,
+    8
+   ],
+   "match": [
+    "gargoyle"
+   ],
+   "kinds": [
+    "gargoyle"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "ghoul",
+   "file": "monsters/ghoul.png",
+   "type": "looks",
+   "box": [
+    12,
+    7
+   ],
+   "match": [
+    "ghoul",
+    "ghast"
+   ],
+   "kinds": [
+    "ghoul"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "mummy",
+   "file": "monsters/mummy.png",
+   "type": "looks",
+   "box": [
+    11,
+    12
+   ],
+   "match": [
+    "mummy",
+    "mummies"
+   ],
+   "kinds": [
+    "mummy"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "vampire",
+   "file": "monsters/vampire.png",
+   "type": "looks",
+   "box": [
+    12,
+    12
+   ],
+   "match": [
+    "vampire",
+    "nosferatu",
+    "vampyre"
+   ],
+   "kinds": [
+    "vampire"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "wisp_mage",
+   "file": "monsters/wisp_mage.png",
+   "type": "looks",
+   "box": [
+    10,
+    13
+   ],
+   "match": [
+    "wisp mage",
+    "mage",
+    "wizard",
+    "sorcerer",
+    "warlock",
+    "witch",
+    "magus"
+   ],
+   "kinds": [
+    "wizard"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "beholder",
+   "file": "monsters/beholder.png",
+   "type": "looks",
+   "box": [
+    12,
+    11
+   ],
+   "match": [
+    "beholder",
+    "gazer"
+   ],
+   "kinds": [
+    "beholder"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "mind_flayer",
+   "file": "monsters/mind_flayer.png",
+   "type": "looks",
+   "box": [
+    12,
+    12
+   ],
+   "match": [
+    "mind flayer",
+    "mindflayer",
+    "illithid",
+    "flayer"
+   ],
+   "kinds": [
+    "mindflayer"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "soul_reaper",
+   "file": "monsters/soul_reaper.png",
+   "type": "looks",
+   "box": [
+    13,
+    13
+   ],
+   "match": [
+    "soul reaper",
+    "reaper",
+    "grim"
+   ],
+   "kinds": [
+    "reaper"
+   ],
+   "cols": 10
+  }
+ ]
+}
