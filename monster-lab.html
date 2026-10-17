@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deepforge Monster Lab</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jacquarda+Bastarda+9&family=Pixelify+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root { --bg: #0f0c14; --panel: #1a1520; --line: #2e2638; --ink: #ece4d4; --ash: #a69cb2; --brass: #e9c46a; --up: #72e07e; --down: #ff7a6a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 'Pixelify Sans', system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 18px 16px 60px; }
+  h1 { font: 400 2.4rem 'Jacquarda Bastarda 9', serif; margin: 0; color: var(--brass); }
+  h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 10px; color: var(--brass); letter-spacing: 0.02em; }
+  .sub { color: var(--ash); margin: 2px 0 14px; font-size: 0.92rem; }
+  .status { display: inline-block; padding: 3px 9px; font-size: 0.82rem; background: #1d3a24; color: var(--up); }
+  .status.off { background: #3a1e20; color: var(--down); }
+  section { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); padding: 14px; margin-top: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select, button { font: inherit; color: var(--ink); background: #120e16; border: 1px solid var(--line); padding: 7px 10px; min-height: 40px; }
+  input[type=text] { flex: 1 1 220px; min-width: 0; }
+  input[type=number] { width: 84px; }
+  button { cursor: pointer; background: #241d2c; }
+  button:hover { background: #2e2538; }
+  button.on { background: var(--brass); color: #1a1208; border-color: var(--brass); }
+  .inspect { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 12px; }
+  @media (max-width: 720px) { .inspect { grid-template-columns: 1fr; } }
+  .stage { background: #120e16; box-shadow: inset 0 0 0 1px var(--line); display: grid; place-items: center; min-height: 230px; position: relative; overflow: hidden; }
+  .stage canvas { image-rendering: pixelated; max-width: 100%; }
+  .stage .lbl { position: absolute; left: 8px; top: 6px; font-size: 0.78rem; color: var(--ash); }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; font-size: 0.92rem; margin-top: 10px; }
+  .facts dt { color: var(--ash); } .facts dd { margin: 0; overflow-wrap: anywhere; }
+  .warn { color: var(--down); }
+  .els { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .els figure { margin: 0; background: #120e16; box-shadow: inset 0 0 0 1px var(--line); padding: 6px; text-align: center; width: 84px; }
+  .els figcaption { font-size: 0.72rem; color: var(--ash); }
+  .els canvas, .card canvas { image-rendering: pixelated; display: block; margin: 0 auto; }
+  .theme { color: var(--ash); font-size: 0.9rem; margin: 8px 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+  .card { background: #120e16; box-shadow: inset 0 0 0 1px var(--line); padding: 8px 6px; text-align: center; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 132px; }
+  .card:hover, .card.sel { box-shadow: inset 0 0 0 2px var(--brass); }
+  .card .cv { flex: 1; display: grid; place-items: end center; min-height: 72px; }
+  .card b { display: block; font-size: 0.84rem; font-weight: 500; margin-top: 6px; line-height: 1.2; }
+  .card small { display: block; font-size: 0.7rem; color: var(--ash); }
+  .card.boss b { color: var(--brass); }
+  .tag { display: inline-block; font-size: 0.66rem; padding: 0 5px; background: #3a2a10; color: var(--brass); margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Monster Lab</h1>
+  <p class="sub">Type a name or roll floors to see monsters exactly as the game draws them. Click any monster to inspect it. <span id="status" class="status">Loading sprite sheets…</span></p>
+
+  <section>
+    <h2>Inspect a name</h2>
+    <div class="row">
+      <input type="text" id="name" value="Ember Goblin Archer" aria-label="Monster name">
+      <select id="el" aria-label="Element"></select>
+      <button data-k="" class="on">Normal</button><button data-k="elite">Elite</button><button data-k="boss">Boss</button>
+    </div>
+    <div class="inspect">
+      <div>
+        <div class="stage"><span class="lbl">Close up</span><canvas id="big"></canvas></div>
+        <dl class="facts" id="facts"></dl>
+      </div>
+      <div>
+        <div class="stage" id="roomStage"><span class="lbl">In a room, next to the hero (real size, zoomed ×4)</span><canvas id="room"></canvas></div>
+        <div class="els" id="els"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Roll a floor</h2>
+    <div class="row">
+      <label>Seed <input type="number" id="seed" value="1"></label>
+      <label>Floor <input type="number" id="floorN" value="1" min="1"></label>
+      <button id="roll">Roll</button><button id="next">Next seed ▶</button>
+    </div>
+    <p class="theme" id="theme"></p>
+    <div class="grid" id="floorGrid"></div>
+  </section>
+
+  <section>
+    <h2>Lots of monsters</h2>
+    <div class="row">
+      <button id="many">Roll 12 floors</button><button id="bosses">Roll 24 bosses</button><button id="bestiary">Whole bestiary</button>
+    </div>
+    <div class="grid" id="manyGrid"></div>
+  </section>
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/prompts.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/bestiary.js"></script>
+<script src="js/gen.js"></script>
+<script>
+(function () {
+  'use strict';
+  const DF = window.DF, $ = (s) => document.querySelector(s);
+  const ELS = ['fire', 'ice', 'lightning', 'poison', 'earth', 'light', 'shadow', 'nature'];
+  let kind = '', current = null, selCard = null;
+
+  $('#el').innerHTML = ['(from name)'].concat(ELS).map((e) => `<option>${e}</option>`).join('');
+  $('#el').value = 'fire';
+
+  // Draw a monster picture onto a canvas at a whole-number zoom.
+  function draw(cv, spec, k, zoom) {
+    const sp = DF.monsterSprite(spec, k === 'boss' ? '' : k);
+    cv.width = sp.w * zoom; cv.height = sp.h * zoom;
+    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(sp.right, 0, 0, cv.width, cv.height);
+    return sp;
+  }
+  function specFromInput() {
+    const name = $('#name').value.trim() || 'Monster', el = $('#el').value;
+    const spec = { name };
+    if (el !== '(from name)') { spec.element = el; spec.colors = [DF.EL_COLOR[el]]; }
+    return spec;
+  }
+
+  function inspect(spec, k) {
+    current = { spec, k };
+    // Close-up: as big as fits.
+    const sp = DF.monsterSprite(spec, k === 'elite' ? 'elite' : '');
+    const zoom = Math.max(4, Math.min(16, Math.floor(200 / Math.max(sp.w, sp.h))));
+    draw($('#big'), spec, k, zoom);
+    // In a room: floor tiles, the hero, and the monster at game size (bosses are drawn 3x in the game).
+    const Z = 4, T = 8, W = 15, H = 7, cv = $('#room'); cv.width = W * T * Z; cv.height = H * T * Z;
+    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { g.fillStyle = (x + y) % 2 ? '#2a2230' : '#251e2b'; g.fillRect(x * T * Z, y * T * Z, T * Z, T * Z); }
+    const hero = new Image(); hero.src = DF.bigPicture('hero', { cls: 'knight' }, 1);
+    const scale = k === 'boss' ? 3 : 1, mw = sp.w * scale * Z, mh = sp.h * scale * Z, ground = cv.height - 14 * Z;
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(cv.width * 0.62, ground, mw * 0.4, 3 * Z, 0, 0, 7); g.fill();
+    g.drawImage(sp.left, Math.round(cv.width * 0.62 - mw / 2), ground - mh, mw, mh);
+    hero.onload = () => { g.drawImage(hero, Math.round(cv.width * 0.2), ground - hero.height * Z, hero.width * Z, hero.height * Z); };
+    // Facts.
+    const src = DF.monsterSource(spec), best = DF.bestiaryFor && DF.bestiaryFor(spec.name);
+    const big = sp.w > 16 || sp.h > 16, tiny = sp.w < 6 || sp.h < 5;
+    $('#facts').innerHTML = `
+      <dt>Name</dt><dd>${esc(spec.name)}</dd>
+      <dt>Body kind</dt><dd>${esc(src.kind)}</dd>
+      <dt>Picture from</dt><dd>${esc(src.from)}${src.set ? ` · <b>monsters/${esc(src.set)}.png</b>` : ''}</dd>
+      <dt>Size</dt><dd class="${big || tiny ? 'warn' : ''}">${sp.w - 2} × ${sp.h - 2} pixels${k === 'boss' ? ` (×3 as a boss = ${(sp.w - 2) * 3} × ${(sp.h - 2) * 3})` : ''}${big ? ' · very big' : tiny ? ' · very small' : ''}</dd>
+      ${spec.behaviour ? `<dt>Behaviour</dt><dd>${esc(spec.behaviour)}${spec.abilities && spec.abilities.length ? ' · ' + spec.abilities.map(esc).join(', ') : ''}</dd>` : ''}
+      ${best ? `<dt>Bestiary</dt><dd>${esc(best.n)}${best.s && best.s[0] ? ' · ' + esc(best.s[0]) : ''}</dd>` : ''}`;
+    // The same name in every element.
+    $('#els').innerHTML = '';
+    ELS.forEach((el) => {
+      const f = document.createElement('figure'), c = document.createElement('canvas');
+      draw(c, Object.assign({}, spec, { element: el, colors: [DF.EL_COLOR[el]].concat((spec.colors || []).slice(1)) }), k, 3);
+      f.appendChild(c); const cap = document.createElement('figcaption'); cap.textContent = el; f.appendChild(cap); $('#els').appendChild(f);
+    });
+  }
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function card(spec, isBoss, label) {
+    const d = document.createElement('div'); d.className = 'card' + (isBoss ? ' boss' : '');
+    const box = document.createElement('div'); box.className = 'cv';
+    const c = document.createElement('canvas'); const sp = DF.monsterSprite(spec, '');
+    const z = Math.max(2, Math.min(5, Math.floor(70 / Math.max(sp.w, sp.h)))); draw(c, spec, '', z); box.appendChild(c);
+    const src = DF.monsterSource(spec);
+    d.innerHTML = '';
+    d.appendChild(box);
+    const t = document.createElement('div');
+    t.innerHTML = `${isBoss ? '<span class="tag">BOSS</span>' : ''}<b>${esc(spec.name)}</b><small>${esc(src.set || src.kind)}${label ? ' · ' + esc(label) : ''}</small>`;
+    d.appendChild(t);
+    d.onclick = () => {
+      if (selCard) selCard.classList.remove('sel'); selCard = d; d.classList.add('sel');
+      $('#name').value = spec.name; $('#el').value = ELS.includes(spec.element) ? spec.element : '(from name)';
+      setKind(isBoss ? 'boss' : ''); inspect(spec, isBoss ? 'boss' : '');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    return d;
+  }
+  function setKind(k) { kind = k; document.querySelectorAll('[data-k]').forEach((b) => b.classList.toggle('on', b.dataset.k === k)); }
+
+  function rollFloor() {
+    const seed = +$('#seed').value || 0, n = Math.max(1, +$('#floorN').value || 1);
+    const f = DF.GEN.floor(seed, n);
+    $('#theme').textContent = `${f.name} — ${f.element}. ${f.description || ''}`;
+    const grid = $('#floorGrid'); grid.innerHTML = '';
+    f.monsters.forEach((m) => grid.appendChild(card(m, false)));
+    grid.appendChild(card(f.boss, true));
+  }
+  function rollMany(onlyBosses) {
+    const grid = $('#manyGrid'); grid.innerHTML = '';
+    const base = Math.floor(Math.random() * 100000);
+    for (let i = 0; i < (onlyBosses ? 24 : 12); i++) {
+      const n = 1 + (i % 10), f = DF.GEN.floor(base + i, n);
+      if (!onlyBosses) f.monsters.forEach((m) => grid.appendChild(card(m, false, 'floor ' + n)));
+      grid.appendChild(card(f.boss, true, 'floor ' + n));
+    }
+  }
+  function showBestiary() {
+    const grid = $('#manyGrid'); grid.innerHTML = '';
+    DF.BESTIARY.forEach((m, i) => { const el = m.el || ELS[i % ELS.length]; grid.appendChild(card({ name: m.n, element: el, body: m.b && m.b[0], colors: [DF.EL_COLOR[el]] }, false, 'tier ' + m.t)); });
+  }
+
+  $('#name').addEventListener('input', () => inspect(specFromInput(), kind));
+  $('#el').addEventListener('change', () => inspect(specFromInput(), kind));
+  document.querySelectorAll('[data-k]').forEach((b) => b.addEventListener('click', () => { setKind(b.dataset.k); inspect(current ? current.spec : specFromInput(), kind); }));
+  $('#roll').onclick = rollFloor;
+  $('#next').onclick = () => { $('#seed').value = (+$('#seed').value || 0) + 1; rollFloor(); };
+  $('#many').onclick = () => rollMany(false);
+  $('#bosses').onclick = () => rollMany(true);
+  $('#bestiary').onclick = showBestiary;
+
+  const start = () => { inspect(specFromInput(), kind); rollFloor(); rollMany(true); };
+  (DF.spritesReady || Promise.resolve(false)).then((found) => {
+    const st = $('#status');
+    if (found) st.textContent = `Sprite sheets loaded: ${found.sets || 0} monster sets`;
+    else { st.textContent = 'Sprite sheets not loaded (open this page from the website) — showing the built-in drawings'; st.classList.add('off'); }
+    start();
+  });
+}());
+</script>
+</body>
+</html>
