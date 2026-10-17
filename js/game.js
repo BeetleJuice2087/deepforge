@@ -18,7 +18,7 @@
   /* ================= Saved progress (camp) ================= */
   const META_KEY = 'deepforge.save';
   function defaultMeta() {
-    return { v: 1, gold: 0, up: { vit: 0, str: 0, tough: 0, fort: 0, satchel: 0 }, books: { mon: {}, item: {}, recipes: [] },
+    return { v: 1, gold: 0, up: { vit: 0, str: 0, tough: 0, fort: 0, satchel: 0, pack: 0 }, books: { mon: {}, item: {}, recipes: [] },
       stats: { runs: 0, deepest: 0, kills: 0, forged: 0, bosses: 0, goldTotal: 0, elites: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, hits: 0, crits: 0, weakHits: 0,
         swings: 0, bashes: 0, potions: 0, chests: 0, mimics: 0, rooms: 0, descents: 0, rerolls: 0, items: 0, legendaries: 0, walked: 0, playSecs: 0, floorsAI: 0, floorsHand: 0, bought: 0, sold: 0, rests: 0, scrolls: 0, spells: 0, pots: 0 },
       records: { killedBy: {}, elemKills: {}, bigHit: null, bestRun: null, longestRun: 0, bestItem: null }, run: null, tips: {} };
@@ -50,6 +50,7 @@
     { id: 'tough', name: 'Toughness', text: '+1 defence', max: Infinity, cost: steep(30, 25) },
     { id: 'fort', name: 'Fortune', text: '+4% luck: crits and better loot', max: 14, cost: steep(40, 30) },
     { id: 'satchel', name: 'Satchel', text: '+1 potion at the start of each run', max: 5, cost: (l) => 60 + l * 60 },
+    { id: 'pack', name: 'Bigger Pack', text: '+2 bag slots (you start with 8)', max: 2, cost: (l) => 120 + l * 120 },
   ];
   // Returns '' when bought, or the reason it couldn't be.
   function buyUpgrade(id) {
@@ -75,10 +76,11 @@
   }
   // A weapon found by a ranger becomes a bow, by a mage a wand or staff, by a tinkerer a wrench or hammer.
   function classWeapon(it, cls) {
-    const kit = DF.CLASS_WEAPONS[cls];
-    if (!kit || it.type !== 'weapon' || kit[it.icon]) return;
+    const offhand = it.type === 'armour' && DF.ARMOUR_SLOT[it.icon] === 'offhand';
+    const kit = it.type === 'weapon' ? DF.CLASS_WEAPONS[cls] : offhand ? DF.CLASS_OFFHAND[cls] : null;
+    if (!kit || kit[it.icon]) return;
     const icons = Object.keys(kit), r = DF.seeded(it.name + '|' + cls), icon = icons[r(icons.length)], noun = kit[icon][r(kit[icon].length)];
-    const nounRe = new RegExp('\\b(' + DF.WEAPON_NOUNS.join('|') + ')\\b', 'i');
+    const nounRe = new RegExp('\\b(' + DF.WEAPON_NOUNS.slice().sort((x, y) => y.length - x.length).join('|') + ')\\b', 'i');
     const m = String(it.name || '').match(nounRe);
     const old = m ? m[1] : it.icon;
     if (m) it.name = it.name.replace(nounRe, noun);
@@ -108,7 +110,15 @@
     if (!it) return {};
     const m = DF.RAR_MULT[it.rarity || 0], L = it.lvl || 0;
     if (it.type === 'weapon') return { attack: Math.round((2 + L * 1.3) * m) };
-    if (it.type === 'armour') { const d = Math.round((1 + L * 0.7) * m); return { defence: d, health: Math.round(d * 1.5) }; }
+    if (it.type === 'armour') {
+      // The body piece is the main armour; the smaller pieces each lean toward a different stat.
+      const d0 = (1 + L * 0.7) * m, k = DF.ARMOUR_SLOT[it.icon] || 'body';
+      if (k === 'offhand') return { defence: Math.max(1, Math.round(d0 * 0.6)) };
+      if (k === 'head') return { defence: Math.max(1, Math.round(d0 * 0.35)), health: Math.round(d0 * 1.2) };
+      if (k === 'hands') return { defence: Math.max(1, Math.round(d0 * 0.3)), attack: Math.max(1, Math.round(d0 * 0.35)) };
+      if (k === 'feet') return { defence: Math.max(1, Math.round(d0 * 0.3)), speed: Math.round(2 + d0 * 0.6) };
+      const d = Math.round(d0); return { defence: d, health: Math.round(d * 1.5) };
+    }
     if (it.type === 'trinket') {
       const s = it.stat;
       if (s === 'health') return { health: Math.round((6 + L * 3) * m) };
@@ -385,16 +395,39 @@
   let action = null; // the context button: open a chest, forge, descend
   const input = { mx: 0, my: 0, attack: false, bash: false, spell: false, spell2: false, act: false, keys: new Set() };
 
-  // The first empty bag slot (-1 when full). Treats any empty value as empty, and keeps the bag at 6 slots.
+  // How many bag slots you have: 8, and 2 more for each Bigger Pack upgrade.
+  const bagSize = () => 8 + 2 * (meta.up.pack || 0);
+  // The first empty bag slot (-1 when full). Treats any empty value as empty, and keeps the bag at its size
+  // (it only grows: a smaller bag never throws items away).
   function freeSlot() {
     if (!run) return -1;
-    if (run.bag.length !== 6) run.bag = Array.from({ length: 6 }, (_, i) => run.bag[i] || null);
+    const n = Math.max(bagSize(), run.bag.filter(Boolean).length);
+    if (run.bag.length !== n) { const items = run.bag.filter(Boolean); run.bag = Array.from({ length: n }, (_, i) => (run.bag.length > n ? items[i] : run.bag[i]) || null); }
     return run.bag.findIndex((x) => !x);
+  }
+  const bagFullMsg = () => `Your bag is full (${run.bag.length} of ${run.bag.length}).`;
+  /* ---- What you wear: weapon, off-hand, head, body, hands, feet and two trinkets ---- */
+  const itemScore = (x) => { const st = itemStats(x); return (st.attack || 0) + (st.defence || 0) + (st.health || 0) / 3 + (st.speed || 0) / 4 + (st.luck || 0) / 3; };
+  function slotKind(it) { return !it ? '' : it.type === 'weapon' ? 'weapon' : it.type === 'trinket' ? 'trinket' : DF.ARMOUR_SLOT[it.icon] || 'body'; }
+  // Where an item goes when you put it on (a trinket takes an empty trinket slot, or replaces the weaker one).
+  function slotFor(it) {
+    const k = slotKind(it); if (k !== 'trinket') return k;
+    if (!run.eq.trinket1) return 'trinket1'; if (!run.eq.trinket2) return 'trinket2';
+    return itemScore(run.eq.trinket1) <= itemScore(run.eq.trinket2) ? 'trinket1' : 'trinket2';
+  }
+  // Older saves wore one armour and one trinket: put them where they belong now.
+  function fixEq(eq) {
+    const out = {}; DF.EQ_SLOTS.forEach((s) => { out[s] = null; });
+    if (!eq) return out;
+    DF.EQ_SLOTS.forEach((s) => { if (eq[s]) out[s] = eq[s]; });
+    if (eq.armour) { const s = DF.ARMOUR_SLOT[eq.armour.icon] || 'body'; if (!out[s]) out[s] = eq.armour; }
+    if (eq.trinket && !out.trinket1) out.trinket1 = eq.trinket;
+    return out;
   }
   function stats() {
     const u = meta.up, base = DF.CLASSES[(run && run.cls) || 'knight'] || DF.CLASSES.knight;
     const s = { maxHp: base.hp + u.vit * 6, attack: base.atk + u.str, defence: u.tough, speed: base.spd, luck: 5 + u.fort * 4, maxMana: base.mana };
-    if (run) for (const k of ['weapon', 'armour', 'trinket']) {
+    if (run) for (const k of DF.EQ_SLOTS) {
       const st = itemStats(run.eq[k]);
       if (st.health) s.maxHp += st.health; if (st.attack) s.attack += st.attack; if (st.defence) s.defence += st.defence;
       if (st.speed) s.speed += st.speed; if (st.luck) s.luck += st.luck;
@@ -415,9 +448,10 @@
     SND.wake();
     if (resume && meta.run) {
       const s = meta.run;
-      run = { floorN: s.floorN, content: s.content, next: newContent(s.floorN + 1), eq: s.eq, bag: s.bag, potions: s.potions, kills: s.kills || 0, gold: s.gold || 0,
+      run = { floorN: s.floorN, content: s.content, next: newContent(s.floorN + 1), eq: fixEq(s.eq), bag: (s.bag || []).slice(), potions: s.potions, kills: s.kills || 0, gold: s.gold || 0,
         forged: s.forged || 0, usedFallbacks: s.usedFallbacks || [], startedAt: s.startedAt || Date.now(), floorKills: s.floorKills || 0, rerolled: s.rerolled || 0, playSecs: s.playSecs || 0,
         cls: DF.CLASSES[s.cls] ? s.cls : 'knight', spell2: s.spell2 && DF.SPELLS[s.spell2.id] ? s.spell2 : null };
+      freeSlot(); // an older, smaller bag grows to today's size
       run.next.prio = 2; dream(run.next);
       enterFloor(s.hp, s.floor);
       return;
@@ -428,8 +462,8 @@
     c.prio = 6; if (!c.dreaming || (c.failed && AI.ready())) { c.failed = false; dream(c); }
     cls = DF.CLASSES[cls] ? cls : 'knight'; meta.lastCls = cls;
     const kit = DF.STARTERS[cls];
-    run = { floorN: 1, content: null, next: null, cls, eq: { weapon: makeItem(kit.weapon, 0, 0, cls), armour: makeItem(kit.armour, 0, 0, cls), trinket: null },
-      bag: Array(6).fill(null), potions: 1 + st0.satchel, kills: 0, gold: 0, forged: 0, usedFallbacks: [], startedAt: Date.now() };
+    run = { floorN: 1, content: null, next: null, cls, eq: fixEq({ weapon: makeItem(kit.weapon, 0, 0, cls), armour: makeItem(kit.armour, 0, 0, cls) }),
+      bag: Array(bagSize()).fill(null), potions: 1 + st0.satchel, kills: 0, gold: 0, forged: 0, usedFallbacks: [], startedAt: Date.now() };
     // Give the AI a few seconds to finish floor 1, but never make you wait long.
     if (AI.ready() && !contentReady(c) && (AI.settings.mode === 'cloud' || AI.local.engine)) {
       const ok = await DF.UI.waitForDream(() => contentReady(c), 9000);
@@ -1191,7 +1225,7 @@
       else if (p.kind === 'potion') { run.potions++; SND.pickup(); DF.UI.toast('Found a potion.'); room.pickups.splice(i, 1); updateHUD(true); }
       else if (p.kind === 'item') {
         const slot = freeSlot();
-        if (slot < 0) { swapWith = p; if (!p.warned) { p.warned = true; DF.UI.toast('Your bag is full (6 of 6). Tap Swap to leave something here instead.'); } continue; }
+        if (slot < 0) { swapWith = p; if (!p.warned) { p.warned = true; DF.UI.toast(bagFullMsg() + ' Tap Swap to leave something here instead.'); } continue; }
         run.bag[slot] = p.item; room.pickups.splice(i, 1); SND.pickup();
         recordItem(p.item);
         { const v = DF.itemVerdict ? DF.itemVerdict(p.item) : null; const tag = v === 'up' ? ' <b class="t-up">\u25b2 upgrade</b>' : v === 'down' ? ' <b class="t-down">\u25bc weaker</b>' : '';
@@ -2193,7 +2227,7 @@
     else if (!P.swing && !blink) { g.fillStyle = wc; g.fillRect(x + (P.dir > 0 ? 3 : -4), y - 9, 1, 4); g.fillStyle = '#8a5a32'; g.fillRect(x + (P.dir > 0 ? 3 : -4), y - 5, 1, 1); }
     if (!blink) drawSprite(g, sp, x, y, P.dir, 1);
     // The shield, held up front while bashing.
-    const sh = run.eq.armour && run.eq.armour.icon === 'shield' ? run.eq.armour.colors[0] : '#7d88a3';
+    const sh = run.eq.offhand && run.eq.offhand.icon === 'shield' ? run.eq.offhand.colors[0] : '#7d88a3';
     if (P.bash) { g.fillStyle = sh; g.fillRect(Math.round(P.x + P.fx * 4 - 2), Math.round(P.y - 6 + P.fy * 3), 4, 5); g.fillStyle = '#ffffff'; g.fillRect(Math.round(P.x + P.fx * 4 - 1), Math.round(P.y - 5 + P.fy * 3), 1, 1); }
     else if (!blink && !tink) { g.fillStyle = sh; g.fillRect(x + (P.dir > 0 ? -4 : 2), y - 6, 2, 3); }
     // The swing: a bright crescent.
@@ -2302,7 +2336,7 @@
     if (e.code === 'KeyI' || e.code === 'KeyV') { input.spell2 = true; e.preventDefault(); }
     if (e.code === 'KeyE' || e.code === 'Enter') { input.act = true; e.preventDefault(); }
     if (e.code === 'KeyQ' || e.code === 'KeyH') usePotion();
-    if (/^Digit[1-6]$/.test(e.code)) DF.UI.openItem({ where: 'bag', i: Number(e.code.slice(5)) - 1 });
+    if (/^Digit[0-9]$/.test(e.code)) { const d = Number(e.code.slice(5)); DF.UI.openItem({ where: 'bag', i: d === 0 ? 9 : d - 1 }); }
   });
   window.addEventListener('keyup', (e) => { if (KEYMAP[e.code]) input.keys.delete(KEYMAP[e.code]); });
   window.addEventListener('blur', () => input.keys.clear());
@@ -2361,14 +2395,14 @@
   function setRef(ref, it) { if (ref.where === 'eq') run.eq[ref.slot] = it; else run.bag[ref.i] = it; }
   function equip(ref) {
     const it = getRef(ref); if (!it || ref.where === 'eq') return;
-    const before = stats().maxHp, old = run.eq[it.type];
-    run.eq[it.type] = it; run.bag[ref.i] = old || null;
+    const slot = slotFor(it), before = stats().maxHp, old = run.eq[slot];
+    run.eq[slot] = it; run.bag[ref.i] = old || null;
     const after = stats().maxHp; if (after > before) P.hp += after - before; P.hp = Math.min(P.hp, after);
     SND.clink(0.5); updateHUD(true); saveRun();
   }
   function unequip(slot) {
     const it = run.eq[slot]; if (!it) return false;
-    const i = freeSlot(); if (i < 0) { DF.UI.toast('Your bag is full (6 of 6). Drop or forge something first.'); return false; }
+    const i = freeSlot(); if (i < 0) { DF.UI.toast(bagFullMsg() + ' Drop or forge something first.'); return false; }
     run.eq[slot] = null; run.bag[i] = it; P.hp = Math.min(P.hp, stats().maxHp); updateHUD(true); saveRun(); return true;
   }
   function dropRef(ref) {
@@ -2386,14 +2420,14 @@
   }
   function allItems() {
     const out = [];
-    ['weapon', 'armour', 'trinket'].forEach((s) => { if (run.eq[s]) out.push({ ref: { where: 'eq', slot: s }, item: run.eq[s] }); });
+    DF.EQ_SLOTS.forEach((s) => { if (run.eq[s]) out.push({ ref: { where: 'eq', slot: s }, item: run.eq[s] }); });
     run.bag.forEach((it, i) => { if (it) out.push({ ref: { where: 'bag', i }, item: it }); });
     return out;
   }
   /* ================= The forge ================= */
   const EL_PREFIX = { fire: 'Ember', ice: 'Frost', lightning: 'Storm', poison: 'Venom', earth: 'Stone', light: 'Radiant', shadow: 'Shade', nature: 'Thorn', none: 'Twin' };
   const ICON_NOUN = { sword: 'Blade', axe: 'Cleaver', hammer: 'Maul', spear: 'Lance', dagger: 'Fang', mace: 'Crusher', helm: 'Crown', chestplate: 'Plate', shield: 'Bulwark',
-    boots: 'Treads', cloak: 'Mantle', gauntlets: 'Fists', ring: 'Band', amulet: 'Pendant', gem: 'Shard', orb: 'Eye', charm: 'Token', feather: 'Plume', wand: 'Rod', bow: 'Longbow', wrench: 'Spanner', crossbow: 'Arbalest', staff: 'Stave' };
+    boots: 'Treads', cloak: 'Mantle', gauntlets: 'Fists', ring: 'Band', amulet: 'Pendant', gem: 'Shard', orb: 'Eye', charm: 'Token', feather: 'Plume', wand: 'Rod', bow: 'Longbow', wrench: 'Spanner', crossbow: 'Arbalest', staff: 'Stave', tome: 'Grimoire', quiver: 'Quiver', toolbox: 'Gearbox' };
   function fallbackForge(a, b) {
     const types = a.type === b.type ? [a.type] : [a.type, b.type];
     const type = pick(types), base = a.type === type ? a : b, other = base === a ? b : a;
@@ -2424,19 +2458,20 @@
     const lvl0 = Math.max(a.lvl || 0, b.lvl || 0, run.floorN) + 1 + (a.rarity === 4 && b.rarity === 4 ? 1 : 0);
     const it = makeItem(spec, rar, lvl0);
     const score = (x) => { const st = itemStats(x); return (st.attack || 0) + (st.defence || 0) + (st.health || 0) / 3 + (st.speed || 0) / 4 + (st.luck || 0) / 3; };
-    const beat = Math.max(...[a, b].filter((x) => x.type === it.type && (x.type !== 'trinket' || x.stat === it.stat)).map(score), -1);
+    const beat = Math.max(...[a, b].filter((x) => slotKind(x) === slotKind(it) && (x.type !== 'trinket' || x.stat === it.stat)).map(score), -1);
     for (let k = 0; k < 8 && score(it) <= beat; k++) it.lvl++;
     it.forged = true; it.from = [a.name, b.name];
     // Put the new item where the old ones were (equipped if one of them was equipped and it fits).
     const before = stats().maxHp;
     setRef(refA, null); setRef(refB, null);
-    const eqRef = [refA, refB].find((r) => r.where === 'eq' && r.slot === it.type);
-    if (eqRef) run.eq[it.type] = it;
+    const kindOfSlot = (s) => (s.startsWith('trinket') ? 'trinket' : s);
+    const eqRef = [refA, refB].find((r) => r.where === 'eq' && kindOfSlot(r.slot) === slotKind(it));
+    if (eqRef) run.eq[eqRef.slot] = it;
     else {
       const i = freeSlot();
       if (i >= 0) run.bag[i] = it;
       else { // bag full and both inputs were worn: wear the new one, and set down what it replaces
-        const old = run.eq[it.type]; run.eq[it.type] = it;
+        const s = slotFor(it), old = run.eq[s]; run.eq[s] = it;
         if (old) { room.pickups.push({ kind: 'item', item: old, x: P.x + P.dir * 8, y: P.y + 2, t: -1.2 }); DF.UI.toast(`Your bag was full, so ${old.name} was set down here.`); }
       }
     }
@@ -2456,7 +2491,7 @@
     meta: { get: () => meta }, run: { get: () => run }, P: { get: () => P }, room: { get: () => room },
   });
   Object.assign(G, {
-    saveMeta, UPGRADES, buyUpgrade, buyStall, sellPrice, sellItem, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
+    saveMeta, UPGRADES, buyUpgrade, buyStall, sellPrice, sellItem, slotFor, slotKind, itemScore, bagSize, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
     prepareNextRun, resize, updateHUD, drawMinimap,
     resetAll() { localStorage.removeItem(META_KEY); meta = defaultMeta(); saveMeta(true); },
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },

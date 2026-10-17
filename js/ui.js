@@ -63,14 +63,20 @@
   }
   function renderSlots() {
     const run = G.run; if (!run) return;
-    document.querySelectorAll('[data-eq]').forEach((b) => { const s = b.dataset.eq; b.innerHTML = slotHTML(run.eq[s], { weapon: 'Weapon', armour: 'Armour', trinket: 'Trinket' }[s]); b.setAttribute('aria-label', run.eq[s] ? run.eq[s].name : 'No ' + s); });
-    const n = run.bag.filter(Boolean).length, lab = $('#bag-label');
-    lab.textContent = n >= 6 ? 'Bag full 6/6' : `Bag ${n}/6`; lab.classList.toggle('full', n >= 6);
+    document.querySelectorAll('[data-eq]').forEach((b) => { const s = b.dataset.eq; b.innerHTML = slotHTML(run.eq[s], slotName(s)); b.setAttribute('aria-label', run.eq[s] ? run.eq[s].name : 'No ' + slotName(s).toLowerCase()); });
+    const n = run.bag.filter(Boolean).length, size = run.bag.length, lab = $('#bag-label');
+    lab.textContent = n >= size ? `Bag full ${size}/${size}` : `Bag ${n}/${size}`; lab.classList.toggle('full', n >= size);
+    // The bar shows the first six bag slots; the rest are one tap away in the hero panel.
+    const extra = run.bag.slice(6).filter(Boolean).length, more = $('#bag-more');
+    if (more) { more.innerHTML = `<span class="more-n">${extra ? '+' + extra : '\u22ef'}</span>`; more.classList.toggle('filled', extra > 0); more.setAttribute('aria-label', `Open the bag (${n} of ${size})`); }
     document.querySelectorAll('[data-bag]').forEach((b) => { const it = run.bag[+b.dataset.bag]; b.innerHTML = slotHTML(it); b.setAttribute('aria-label', it ? it.name : 'Empty bag slot'); b.classList.toggle('filled', !!it); });
   }
   document.querySelectorAll('[data-eq]').forEach((b) => b.addEventListener('click', () => openItem({ where: 'eq', slot: b.dataset.eq })));
   document.querySelectorAll('[data-bag]').forEach((b) => b.addEventListener('click', () => openItem({ where: 'bag', i: +b.dataset.bag })));
   $('#potion').addEventListener('click', () => G.usePotion());
+  $('#bag-more').addEventListener('click', () => { invSel = { ref: { where: 'bag', i: Math.min(6, G.run.bag.length - 1) } }; openInventory(); });
+  // Friendly names for the places you wear things.
+  function slotName(s) { const cls = G.run && G.run.cls; return { weapon: WEAPON_WORD[cls] || 'Weapon', offhand: DF.OFFHAND_WORD[cls] || 'Off-hand', head: 'Head', body: 'Body', hands: 'Hands', feet: 'Feet', trinket1: 'Trinket', trinket2: 'Trinket', trinket: 'Trinket' }[s] || s; }
 
   /* ---------- The modal sheet ---------- */
   let onClose = null;
@@ -112,15 +118,23 @@
   /* ---------- Comparing a find with what you're wearing ---------- */
   const CMP_STATS = ['attack', 'defence', 'health', 'speed', 'luck'];
   function itemScore(it) { const st = G.itemStats(it); return (st.attack || 0) + (st.defence || 0) + (st.health || 0) / 3 + (st.speed || 0) / 4 + (st.luck || 0) / 3 + (it.powers || []).length * 2; }
+  // What a find would replace: the item in its slot (for trinkets, an empty trinket slot or the weaker of the two).
+  function compareTarget(it) {
+    const run = G.run; if (!run || !it) return { worn: true };
+    if (Object.values(run.eq).includes(it)) return { worn: true };
+    const k = G.slotKind(it);
+    if (k === 'trinket') { const a = run.eq.trinket1, b = run.eq.trinket2; return { slot: 'trinket', cur: !a || !b ? null : G.itemScore(a) <= G.itemScore(b) ? a : b }; }
+    return { slot: k, cur: run.eq[k] };
+  }
   function verdict(it) {
-    const cur = G.run && G.run.eq[it.type]; if (!cur || cur === it) return cur ? null : 'up';
-    const d = itemScore(it) - itemScore(cur); return d > 0.5 ? 'up' : d < -0.5 ? 'down' : 'same';
+    const t = compareTarget(it); if (t.worn) return null; if (!t.cur) return 'up';
+    const d = itemScore(it) - itemScore(t.cur); return d > 0.5 ? 'up' : d < -0.5 ? 'down' : 'same';
   }
   const VERDICT = { up: 'Upgrade ▲', down: 'Weaker ▼', same: 'About the same' };
   function compareBlock(it) {
     const run = G.run; if (!run || !it) return '';
-    const cur = run.eq[it.type]; if (cur === it) return '';
-    if (!cur) return `<div class="cmp"><div class="cmp-head"><span>Your ${it.type} slot is empty.</span><b class="cmp-v up">${VERDICT.up}</b></div></div>`;
+    const t = compareTarget(it); if (t.worn) return ''; const cur = t.cur;
+    if (!cur) return `<div class="cmp"><div class="cmp-head"><span>Your ${slotName(t.slot).toLowerCase()} slot is empty.</span><b class="cmp-v up">${VERDICT.up}</b></div></div>`;
     const a = G.itemStats(cur), b = G.itemStats(it), v = verdict(it);
     const rows = CMP_STATS.filter((k) => a[k] || b[k]).map((k) => {
       const d = (b[k] || 0) - (a[k] || 0), u = k === 'luck' ? '%' : '';
@@ -132,7 +146,7 @@
     const el = ea !== eb ? `<div class="cmp-row wide"><span>Element</span><p>${cap(ea)} → ${cap(eb)}</p></div>` : '';
     return `<div class="cmp"><div class="cmp-head"><img src="${DF.bigPicture('item', cur, 3)}" alt=""><span>vs your <b style="color:${DF.RAR_COLOR[cur.rarity]}">${esc(cur.name)}</b></span><b class="cmp-v ${v}">${VERDICT[v]}</b></div>${rows}${pw}${el}</div>`;
   }
-  const tileArrow = (it) => { const v = G.run && G.run.eq[it.type] !== it ? verdict(it) : null; return v === 'up' ? '<em class="tile-v up">▲</em>' : v === 'down' ? '<em class="tile-v down">▼</em>' : ''; };
+  const tileArrow = (it) => { const v = G.run ? verdict(it) : null; return v === 'up' ? '<em class="tile-v up">▲</em>' : v === 'down' ? '<em class="tile-v down">▼</em>' : ''; };
   function weaponFeelText(icon) { return { wand: 'Light, quick swings.', bow: 'Swung like a club. Light.', wrench: 'Solid, steady swings.', sword: 'Balanced swings.', axe: 'Wide swings.', hammer: 'Slow, heavy swings.', spear: 'Long reach, narrow thrust.', dagger: 'Very quick stabs.', mace: 'Heavy swings.' }[icon] || ''; }
   function openItem(ref) {
     if (!G.run || G.mode !== 'play') return;
@@ -194,7 +208,7 @@
       if (t.dataset.sel) { const v = t.dataset.sel; invSel = v === 'scroll' || v === 'potion' ? { kind: v } : v.startsWith('eq:') ? { ref: { where: 'eq', slot: v.slice(3) } } : { ref: { where: 'bag', i: +v.slice(4) } }; draw(); return; }
       const a = t.dataset.a, ref = invSel && invSel.ref;
       if (a === 'close') { closeSheet(); return; }
-      if (a === 'eq' && ref) { const it = G.getRef(ref); G.equip(ref); invSel = { ref: { where: 'eq', slot: it.type } }; }
+      if (a === 'eq' && ref) { const it = G.getRef(ref); G.equip(ref); const s = Object.keys(G.run.eq).find((k) => G.run.eq[k] === it); invSel = s ? { ref: { where: 'eq', slot: s } } : invSel; }
       if (a === 'off' && ref) { const it = G.getRef(ref); if (G.unequip(ref.slot)) { const i = G.run.bag.indexOf(it); invSel = { ref: { where: 'bag', i } }; } }
       if (a === 'drop' && ref) { if (!t.dataset.armed) { t.dataset.armed = '1'; t.textContent = 'Tap again to drop'; return; } G.dropRef(ref); invSel = { ref: { where: 'eq', slot: 'weapon' } }; }
       if (a === 'drink') { G.usePotion(); }
@@ -220,12 +234,11 @@
     const potionSlot = `<button class="inv-slot potion ${run.potions ? 'filled' : ''} ${isSel('potion') ? 'on' : ''}" data-sel="potion" style="--r:#ff4a6a" aria-label="Potions">
       <img class="pix" src="${DF.bigPicture('item', { icon: 'potion', colors: ['#ff4a6a', '#cfc8dc'], element: 'none' }, 4)}" alt=""${run.potions ? '' : ' style="opacity:.35"'}><b>${run.potions}</b></button>`;
     const wire = (side) => `<i class="wire ${side}"></i>`;
-    const doll = `<div class="doll">
-        <div class="doll-col">${`<div class="doll-slot">${slotBtn('eq:weapon', run.eq.weapon, WEAPON_WORD[cls])}${wire('r')}<small>${WEAPON_WORD[cls]}</small></div>`}
-          <div class="doll-slot">${scrollSlot}${wire('r')}<small>${cls === 'mage' ? 'Spellbook' : 'Scroll'}</small></div></div>
+    const wear = (s, side) => `<div class="doll-slot">${side === 'l' ? wire('l') : ''}${slotBtn('eq:' + s, run.eq[s], slotName(s))}${side === 'r' ? wire('r') : ''}<small>${slotName(s)}</small></div>`;
+    const doll = `<div class="doll doll8">
+        <div class="doll-col">${wear('weapon', 'r')}${wear('offhand', 'r')}${wear('trinket1', 'r')}${wear('trinket2', 'r')}</div>
         <div class="doll-hero"><img class="pix" src="${DF.bigPicture('hero', { cls }, 9)}" alt="${esc(c.name)}"></div>
-        <div class="doll-col"><div class="doll-slot">${wire('l')}${slotBtn('eq:armour', run.eq.armour, 'Armour')}<small>Armour</small></div>
-          <div class="doll-slot">${wire('l')}${slotBtn('eq:trinket', run.eq.trinket, 'Trinket')}<small>Trinket</small></div></div>
+        <div class="doll-col">${wear('head', 'l')}${wear('body', 'l')}${wear('hands', 'l')}${wear('feet', 'l')}</div>
       </div>`;
     const statRow = (k, label, total, b, color, unit) => {
       const gear = total - b;
@@ -263,7 +276,7 @@
       const compare = eqd ? '' : compareBlock(selItem);
       detail = `${itemBlock(selItem, false)}${compare}<div class="row">${eqd ? '<button class="btn small" data-a="off">Take off</button>' : '<button class="btn small primary" data-a="eq">Equip</button>'}<button class="btn small ghost" data-a="drop">Drop</button></div>`;
     } else if (sel.ref) {
-      detail = `<p class="inv-empty">Nothing in this slot. ${sel.ref.where === 'eq' ? `Equip a ${sel.ref.slot} from your bag to fill it.` : 'Room for one more find.'}</p>`;
+      detail = `<p class="inv-empty">Nothing in this slot. ${sel.ref.where === 'eq' ? `Equip ${/^[aeiou]/i.test(slotName(sel.ref.slot)) ? 'an' : 'a'} ${slotName(sel.ref.slot).toLowerCase()} item from your bag to fill it.` : 'Room for one more find.'}</p>`;
     } else if (sel.kind === 'scroll') {
       detail = def ? spellBlock(sp.id, cls === 'mage' ? 'In your spellbook' : `Scroll \u00b7 ${sp.charges} charge${sp.charges === 1 ? '' : 's'} left`, cls !== 'mage')
         : `<p class="inv-empty">${cls === 'mage' ? 'Your spellbook has room for one more spell. Find a scroll in a chest or buy one from a merchant, and you\u2019ll learn it for good.' : 'No scroll. Find one in a chest or buy one from a merchant; you can read it aloud a few times.'}</p>`;
@@ -279,7 +292,7 @@
         <section class="inv-panel"><h3>Stats</h3>${stats}</section>
       </div>
       <section class="inv-panel"><h3>Moves</h3><ul class="inv-moves">${moves.join('')}</ul>${extra}</section>
-      <section class="inv-panel"><h3>Bag <span class="${n >= 6 ? 'full' : ''}">${n}/6</span></h3><div class="inv-bag">${bag}<i class="sep"></i>${potionSlot}</div></section>
+      <section class="inv-panel"><h3>Bag <span class="${n >= run.bag.length ? 'full' : ''}">${n}/${run.bag.length}</span></h3><div class="inv-bag">${bag}<i class="sep"></i>${potionSlot}${scrollSlot}</div></section>
       <section class="inv-panel inv-detail">${detail}</section>
       <div class="inv-foot"><span><i class="coin"></i> ${m.gold} gold</span><span>${run.kills} defeated</span><span>${run.forged} forged</span><span class="keyhint"><kbd>Tab</kbd> close</span></div>`;
   }

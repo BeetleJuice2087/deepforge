@@ -432,3 +432,11 @@ body.touch .inv-foot .keyhint { display: none; }
 .trade-row b { color: var(--brass); } .trade-row b.short { color: #a89a80; }
 .trade-row.sold { opacity: 0.45; cursor: default; }
 .tile em.tile-price { position: static; display: block; font-style: normal; font-size: 0.78rem; font-weight: 600; color: var(--brass); margin-top: 2px; }
+
+/* Eight places to wear things */
+.doll8 .doll-col { gap: 8px; }
+.doll8 .doll-hero { height: 220px; }
+.slot.more { display: grid; place-items: center; }
+.slot.more .more-n { font-size: 0.8rem; font-weight: 600; color: var(--ash); }
+.slot.more.filled .more-n { color: var(--brass); }
+.doll8 .inv-slot span { visibility: hidden; }
