@@ -395,3 +395,6 @@ body.touch .inv-foot .keyhint { display: none; }
 .credits b { color: var(--bone); font-weight: 600; }
 .credits a { color: var(--brass); }
 .credits em { font-style: normal; font-size: 0.72rem; padding: 0 4px; margin-left: 4px; box-shadow: inset 0 0 0 1px var(--iron); }
+
+.book .special { margin: 4px 0; font-size: 0.85rem; color: var(--ash); }
+.book .special b { color: #ffb070; margin-right: 4px; }

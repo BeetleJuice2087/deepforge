@@ -193,9 +193,134 @@
     ['basilisk', /\b(basilisks?|hydras?|drakes?|salamanders?|raptors?|lizards?)\b/g],
     ['blade', /\b(blades?|swords?)\b/g],
     ['slime', /\b(slimes?|oozes?|goo|gel|sludge\w*|globs?|gloop|blobs?)\b/g],
+    // Two-word names that should beat their last word.
+    ['lich', /\bskeleton ?mages?\b/g],
+    ['troll', /\bzombie ?brutes?\b/g],
+    ['ghoul', /\btroglodytes?\b/g],
+    ['flame', /\belementals?\b/g],
+    ['spiky', /\bspik(y|es)\b/g],
+    ['golem', /\bclockworks?\b/g],
+    ['ghost', /\blost ?souls?\b/g],
+    ['eyeball', /\beye ?beasts?\b/g],
+    ['walker', /\b(stags?|elks?|moose|hinds?|antelopes?|jackals?|hyenas?|panthers?|cougars?|lynx|badgers?)\b/g],
   );
+
+  /* ---- Monster parts, like Starbound's guns: people and floaters are a top, a middle and a bottom
+     (7 wide); beasts are a back, a middle and a head (11 wide). The name picks the parts, so a monster
+     always looks the same, and each kind only uses parts that suit it (skeletons get skulls and ribs). ---- */
+  const PARTS = {
+    tops: { 'head': ["..aaa..", ".aaaaa.", ".adada."], 'horns': ["b.....b", ".baaab.", ".adada."], 'hood': ["..ccc..", ".ccccc.", ".cdcdc."], 'helmet': ["...bb..", ".aaaaa.", ".cdddc."], 'skull': [".aaaaa.", ".adada.", "..aca.."], 'hat': ["...b...", "..bbb..", "bbadabb"], 'ears': ["a.aaa.a", ".aaaaa.", ".adada."], 'crown': [".b.b.b.", ".bbbbb.", ".adada."], 'cyclops': ["..aaa..", ".abdba.", "..aaa.."], 'antenna': [".c...c.", "..ccc..", ".cdddc."] },
+    mids: { 'plain': ["aaaaaaa", "a.bbb.a", "..bbb.."], 'sword': ["aaaaa.b", "a.bbbab", "..bbb.c"], 'shield': [".aaaabb", "a.bbbbb", "..bbbbb"], 'robe': [".bbbbb.", "bbbbbbb", "bbbbbbb"], 'staff': [".aaaa.d", "abbbbac", "..bbb.c"], 'bow': ["aaaa.b.", "a.bbacb", "..bbb.b"], 'wings': ["c.aaa.c", "ccbbbcc", "c.bbb.c"], 'ribs': [".aaaaa.", "a.cac.a", "..aca.."], 'brute': ["aaaaaaa", "aabbbaa", "a.bbb.a"], 'cape': ["ccaaacc", "c.bbb.c", "c.bbb.c"] },
+    bots: { 'legs': ["..a.a..", ".cc.cc."], 'stance': [".a...a.", "cc...cc"], 'hem': ["bbbbbbb", "b.b.b.b"], 'wisp': ["..aaa..", "...a..."], 'tentacles': ["a.a.a.a", ".a.a.a."], 'tail': ["aa.a.a.", "a..c.c."], 'bones': ["..a.a..", "..a.a.."], 'puddle': ["aaaaaaa", ".ccccc."], 'spider': ["c.a.a.c", ".c...c."], 'stumps': [".aa.aa.", ".cc.cc."] },
+    backs: { 'tail up': ["a...", "a...", "a...", ".aaa", "aaaa", ".cc."], 'long tail': ["....", "....", "....", "aaaa", ".aaa", ".cc."], 'spines': ["....", "....", ".b.b", "baaa", ".aaa", ".cc."], 'bushy': ["....", "bb..", "bbb.", ".baa", ".aaa", ".cc."], 'stinger': ["aa..", "a.a.", "..a.", ".aaa", ".aaa", ".cc."], 'fin': ["....", "....", "..a.", ".aaa", "aaaa", "..c."], 'club': ["....", "....", "....", "b.aa", "baaa", ".cc."] },
+    middles: { 'plain': ["...", "...", "...", "aaa", "aaa", "..."], 'spikes': ["...", "...", "b.b", "aaa", "aaa", "..."], 'wings': ["c..", "cc.", "ccc", "aaa", "aaa", "..."], 'plates': ["...", "...", "bbb", "aba", "aaa", "..."], 'ribs': ["...", "...", "...", "aca", "aca", "..."], 'stripes': ["...", "...", "...", "aba", "aba", "..."], 'hump': ["...", "...", ".a.", "aaa", "aaa", "..."], 'shell': ["...", "...", "bbb", "bbb", "aaa", "..."] },
+    fronts: { 'dog': ["..a.", ".aaa", ".aad", "aaaa", "aa..", ".c.."], 'horned': ["...b", "..ab", ".aad", "aaaa", "aa..", ".c.."], 'beak': ["....", ".aa.", ".adb", "aaa.", "aa..", ".c.."], 'tusks': ["....", ".aaa", "aaad", "aaab", "aa..", ".c.."], 'jaws': ["....", ".aad", ".a..", "aadd", "aa..", ".c.."], 'long neck': ["..aa", "..ad", "..a.", ".aa.", "aa..", ".c.."], 'skull': ["....", ".aaa", ".adc", "aaca", "aa..", ".c.."], 'antlers': ["b.b.", ".bb.", ".aad", "aaaa", "aa..", ".c.."] },
+  };
+  const ALL = (k) => Object.keys(PARTS[k]);
+  // [tops, middles, bottoms] each kind may use, and how often it uses parts instead of its hand-drawn shape.
+  const PART_KINDS = {
+    biped: [ALL('tops'), ALL('mids'), ['legs', 'stance', 'hem', 'tail', 'bones', 'stumps', 'wisp', 'tentacles'], 1],
+    skeleton: [['skull', 'helmet', 'crown', 'hood'], ['ribs', 'sword', 'shield', 'bow', 'staff', 'cape'], ['bones', 'legs', 'stance'], 0.6],
+    zombie: [['head', 'ears'], ['plain', 'brute', 'cape'], ['legs', 'stance', 'stumps'], 0.5],
+    goblin: [['ears'], ['plain', 'sword', 'bow', 'shield'], ['legs', 'stance'], 0.6],
+    orc: [['head', 'horns', 'helmet'], ['brute', 'sword', 'shield'], ['stance', 'legs', 'stumps'], 0.6],
+    cultist: [['hood', 'horns', 'crown', 'skull'], ['robe', 'staff', 'cape', 'plain'], ['hem', 'legs', 'wisp'], 0.6],
+    knight: [['helmet', 'horns', 'crown', 'skull'], ['sword', 'shield', 'plain', 'cape', 'staff'], ['legs', 'stance', 'stumps'], 0.6],
+    imp: [['horns', 'ears', 'head', 'antenna'], ['wings', 'plain', 'sword', 'staff'], ['tail', 'legs', 'stance'], 0.6],
+    demon: [['horns', 'crown'], ['wings', 'brute', 'cape'], ['tail', 'stance'], 0.5],
+    lich: [['skull', 'crown', 'hood'], ['robe', 'staff'], ['hem', 'wisp'], 0.6],
+    wizard: [['hat', 'hood'], ['robe', 'staff'], ['hem'], 0.6],
+    rogue: [['hood'], ['sword', 'cape', 'plain'], ['legs', 'stance'], 0.6],
+    archer: [['hood', 'ears', 'head', 'helmet'], ['bow'], ['legs', 'stance'], 0.6],
+    spearman: [['helmet', 'head'], ['staff', 'shield'], ['legs', 'stance'], 0.4],
+    shieldbearer: [['helmet', 'head', 'horns'], ['shield'], ['legs', 'stance'], 0.5],
+    vampire: [['head', 'crown'], ['cape'], ['legs'], 0.5],
+    ghost: [['head', 'hood', 'cyclops'], ['robe', 'cape', 'plain'], ['wisp', 'tentacles'], 0.4],
+    wraith: [['hood'], ['robe', 'cape'], ['wisp', 'tentacles'], 0.5],
+    banshee: [['head', 'hood'], ['robe', 'cape'], ['wisp'], 0.4],
+    reaper: [['hood', 'skull'], ['robe', 'staff'], ['wisp', 'hem'], 0.5],
+    troll: [['head', 'horns', 'cyclops'], ['brute'], ['stance', 'stumps'], 0.6],
+    minotaur: [['horns'], ['brute', 'sword'], ['stance', 'stumps'], 0.5],
+    gargoyle: [['horns', 'ears'], ['wings'], ['stance', 'tail'], 0.5],
+    mindflayer: [['cyclops', 'head', 'antenna'], ['robe', 'cape'], ['tentacles'], 0.5],
+    golem: [['head', 'cyclops', 'helmet'], ['brute', 'plain'], ['stance', 'stumps'], 0.5],
+    lizardman: [['head', 'ears'], ['sword', 'shield', 'plain'], ['tail'], 0.5],
+    mummy: [['head', 'cyclops'], ['plain', 'brute'], ['legs', 'stumps'], 0.4],
+  };
+  // Beasts: [backs, middles, heads] and how often.
+  const BEAST_KINDS = {
+    walker: [ALL('backs'), ALL('middles'), ['dog', 'horned', 'tusks', 'jaws', 'antlers'], 1],
+    basilisk: [['long tail', 'spines', 'club', 'fin'], ['plain', 'spikes', 'plates', 'stripes'], ['long neck', 'jaws', 'horned'], 0.6],
+    bonebeast: [['tail up', 'long tail', 'spines'], ['ribs'], ['skull'], 0.6],
+    horse: [['long tail', 'bushy'], ['plain', 'hump', 'stripes'], ['long neck', 'horned'], 0.5],
+  };
+  // The first word that matches picks a head for beasts ("Boar" gets tusks).
+  const BEAST_HEADS = [[/boar|pig|hog/, 'tusks'], [/deer|stag|elk|moose/, 'antlers'], [/bull|goat|ram|ox\b/, 'horned'], [/wolf|hound|dog|fox|jackal|rat|mouse/, 'dog'],
+    [/croc|gator|shark|maw|jaw/, 'jaws'], [/bird|raptor|griffin/, 'beak']];
+  DF.SPRITE_DATA = { PARTS, SHAPES, PART_KINDS, BEAST_KINDS };
+  function prefer(list, wish, r) { const w = list.filter((x) => wish.includes(x)); return w.length && r(10) < 7 ? w[r(w.length)] : list[r(list.length)]; }
+  function partRows(kind, spec, r) {
+    const ab = spec.abilities || [], el = spec.element, beh = spec.behaviour, name = String(spec.name || '').toLowerCase();
+    if (PART_KINDS[kind]) {
+      const [ts, ms, bs] = PART_KINDS[kind];
+      // What it does shows in what it carries.
+      const midWish = ab.includes('armoured') || ab.includes('shields') ? ['shield'] : beh === 'shooter' || ab.includes('rapid fire') ? ['bow', 'staff']
+        : beh === 'summoner' || ab.includes('heals friends') ? ['staff', 'robe'] : beh === 'tank' ? ['brute', 'shield'] : ab.includes('charges') ? ['sword'] : [];
+      const topWish = el === 'fire' || el === 'shadow' ? ['horns', 'hood'] : el === 'light' ? ['crown', 'helmet'] : el === 'lightning' ? ['antenna', 'cyclops'] : [];
+      const botWish = beh === 'ambusher' || beh === 'trickster' ? ['wisp', 'tentacles'] : beh === 'tank' ? ['stance', 'stumps'] : [];
+      return PARTS.tops[prefer(ts, topWish, r)].concat(PARTS.mids[prefer(ms, midWish, r)], PARTS.bots[prefer(bs, botWish, r)]);
+    }
+    const [bk, md, fr] = BEAST_KINDS[kind];
+    let head = fr[r(fr.length)];
+    for (const [re, h] of BEAST_HEADS) if (re.test(name) && fr.includes(h)) { head = h; break; }
+    const midWish = ab.includes('armoured') ? ['plates', 'shell'] : el === 'fire' || el === 'earth' ? ['spikes', 'plates'] : [];
+    const back = PARTS.backs[bk[r(bk.length)]], mid = PARTS.middles[prefer(md, midWish, r)], front = PARTS.fronts[head];
+    return back.map((row, y) => row + mid[y] + front[y]).filter((row, y) => y > 0 || /[^.]/.test(row));
+  }
+  /* ---- Monster sets: one PNG per monster in sprites/monsters/ (see sprites.json). A "layers" sheet has
+     three rows (tops, middles, bottoms) that stack on top of each other; a "looks" sheet is a row of whole
+     monsters. The words in a monster's name pick its set ("Goblin Archer" beats plain "Goblin"). ---- */
+  const SETS = [];
+  const esc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function phraseRe(ph) { return ph.toLowerCase().split(/\s+/).map((w) => new RegExp('\\b' + esc(w) + '(s|es)?\\b')); }
+  function pickSet(spec, kind) {
+    if (!SETS.length) return null;
+    const name = String(spec.name || '').toLowerCase();
+    let best = [], score = -1;
+    for (const st of SETS) for (const ph of st.match) {
+      let end = -1, ok = true;
+      for (const re of ph) { const m = re.exec(name); if (!m) { ok = false; break; } end = Math.max(end, m.index + m[0].length); }
+      if (!ok) continue;
+      const sc = ph.length * 1000 + end; // more words first, then the word that comes last ("Giant Spider" is a spider)
+      if (sc > score) { score = sc; best = [st]; } else if (sc === score && !best.includes(st)) best.push(st);
+    }
+    if (!best.length) best = SETS.filter((st) => st.kinds.includes(kind));
+    if (!best.length) return null;
+    return best[seeded(name + '|set')(best.length)];
+  }
+  function setRows(spec, kind) {
+    const st = pickSet(spec, kind); if (!st) return null;
+    const r = seeded(String(spec.name || '') + '|look');
+    if (st.looks) return st.looks[r(st.looks.length)];
+    const [ts, ms, bs] = st.layers; if (!ts.length || !ms.length || !bs.length) return null;
+    const layers = [bs[r(bs.length)], ms[r(ms.length)], ts[r(ts.length)]];
+    const h = layers[0].length, w = layers[0][0].length;
+    const out = [];
+    for (let y = 0; y < h; y++) { let row = ''; for (let x = 0; x < w; x++) { let ch = '.'; for (const L of layers) if (L[y] && L[y][x] && L[y][x] !== '.') ch = L[y][x]; row += ch; } out.push(row); }
+    // A layer's own black outline can end up on the edge once stacked: the game draws the outline itself.
+    const dark = (ch) => LIT[ch] && lum(LIT[ch]) < 0.09, open = (x, y) => y < 0 || y >= h || x < 0 || x >= w || out[y][x] === '.';
+    const cut = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (dark(out[y][x]) && (open(x - 1, y) || open(x + 1, y) || open(x, y - 1) || open(x, y + 1))) cut.push([x, y]);
+    for (const [x, y] of cut) out[y] = out[y].slice(0, x) + '.' + out[y].slice(x + 1);
+    return trimRows(out);
+  }
+  DF.monsterSet = (spec) => { const st = pickSet(spec, DF.bodyType(spec)); return st ? st.name : ''; };
   function creatureRows(spec) {
     const name = String(spec.name || 'Monster'), r = seeded(name), kind = DF.bodyType(spec);
+    const fromSet = setRows(spec, kind); if (fromSet) return fromSet;
+    // Built from parts some of the time (always for plain people and four-legged beasts).
+    const pk = PART_KINDS[kind] || BEAST_KINDS[kind];
+    if (pk) { const pr = seeded(name + '|parts'); if (pr(100) < pk[3] * 100) return partRows(kind, spec, pr); }
     const grid = (w, h) => Array.from({ length: h }, () => Array(w).fill('.'));
     const out = (gr) => gr.map((row) => row.join(''));
     if (SHAPES[kind]) { const list = SHAPES[kind]; return list[r(list.length)]; }
@@ -270,6 +395,7 @@
 
   /* ---- Turning letter pictures into little canvases (cached) ---- */
   const cache = new Map();
+  const LIT = {}; // colours drawn in sprite sheets that aren't key colours: kept exactly as drawn
   function paint(rows, pal, outline, scale) {
     scale = scale || 1;
     const h = rows.length, w = Math.max(...rows.map((r) => r.length)), pad = outline ? 1 : 0;
@@ -285,7 +411,7 @@
     }
     for (let y = 0; y < h; y++) for (let x = 0; x < rows[y].length; x++) {
       const ch = rows[y][x]; if (ch === '.') continue;
-      g.fillStyle = pal[ch] || pal.a; g.fillRect((x + pad) * scale, (y + pad) * scale, scale, scale);
+      g.fillStyle = pal['*'] || pal[ch] || LIT[ch] || pal.a; g.fillRect((x + pad) * scale, (y + pad) * scale, scale, scale);
     }
     return cv;
   }
@@ -300,15 +426,16 @@
     const b = cols[1] || lighten(a, 0.35), c = cols[2] || darken(a, 0.45);
     let d = cols[3] || '#ffffff';
     if (Math.abs(lum(d) - lum(a)) < 0.25) d = lum(a) > 0.5 ? '#1a1020' : '#ffffff';
-    return { a, b, c, d };
+    return { a, b, c, d, e: mix(a, c, 0.5), f: lighten(a, 0.65) };
   }
   // A monster picture: { right, left, w, h }. Kinds: '' normal, 'elite' gold outline, 'flash' all white.
+  DF.creatureRows = creatureRows;
   DF.monsterSprite = function (spec, kind) {
     const key = 'm|' + spec.name + '|' + (spec.colors || []).join() + '|' + (kind || '');
     if (cache.has(key)) return cache.get(key);
     const rows = creatureRows(spec); // always from the name, so old saves get new shapes too
     let pal = monsterPalette(spec);
-    if (kind === 'flash') pal = { a: '#ffffff', b: '#ffffff', c: '#ffffff', d: '#ffffff' };
+    if (kind === 'flash') pal = { '*': '#ffffff' };
     const outline = kind === 'elite' ? '#ffcf4a' : kind === 'flash' ? null : '#0c0a10';
     const right = paint(rows, pal, outline, 1), left = flipped(right);
     const s = { right, left, w: right.width, h: right.height };
@@ -351,4 +478,92 @@
     const url = cv.toDataURL();
     cache.set(key, url); return url;
   };
+  /* ---- Sprite sheets: the game can load its monster shapes and parts from PNG files in sprites/.
+     Key colours get recoloured per monster (red = body, green = second colour, blue = dark, white = eyes);
+     any other colour stays exactly as drawn. sprites/sprites.json says which box is which.
+     Opened straight from a file (file://) the browser won't let us read the pixels, so the drawings
+     written in this file are used instead. ---- */
+  const litByHex = {};
+  function litChar(h) {
+    if (!litByHex[h]) { const ch = String.fromCharCode(0x100 + Object.keys(litByHex).length); litByHex[h] = ch; LIT[ch] = h; }
+    return litByHex[h];
+  }
+  function readBox(px, W, x0, y0, w, h, keys) {
+    const rows = []; let any = false;
+    for (let y = 0; y < h; y++) {
+      let row = '';
+      for (let x = 0; x < w; x++) {
+        const i = ((y0 + y) * W + x0 + x) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
+        if (px[i + 3] < 128) { row += '.'; continue; }
+        any = true;
+        let ch = '';
+        for (const k in keys) { const q = keys[k]; if (Math.abs(r - q[0]) + Math.abs(g - q[1]) + Math.abs(b - q[2]) < 12) { ch = k; break; } }
+        row += ch || litChar(hex(r, g, b));
+      }
+      rows.push(row);
+    }
+    return any ? rows : null;
+  }
+  function trimRows(rows) {
+    let t = 0, bm = rows.length - 1, l = Infinity, rt = -1;
+    while (t <= bm && !/[^.]/.test(rows[t])) t++;
+    while (bm >= t && !/[^.]/.test(rows[bm])) bm--;
+    for (let y = t; y <= bm; y++) { const m = rows[y].match(/[^.]/), n = rows[y].search(/[^.][.]*$/); if (m) { l = Math.min(l, m.index); rt = Math.max(rt, n); } }
+    return rows.slice(t, bm + 1).map((row) => row.slice(l, rt + 1));
+  }
+  // Which part lists a brand-new part joins: the kinds that may use every part of that set.
+  const SET_SLOT = { tops: [PART_KINDS, 0], mids: [PART_KINDS, 1], bots: [PART_KINDS, 2], backs: [BEAST_KINDS, 0], middles: [BEAST_KINDS, 1], fronts: [BEAST_KINDS, 2] };
+  const OPEN_KINDS = { tops: ['biped'], mids: ['biped'], bots: ['biped'], backs: ['walker'], middles: ['walker'], fronts: ['walker'] };
+  function loadImage(src) {
+    return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => no(new Error('no image ' + src)); im.src = src; });
+  }
+  DF.loadSpriteSheets = async function (base) {
+    base = base || 'sprites/';
+    if (location.protocol === 'file:') return false;
+    const man = await (await fetch(base + 'sprites.json', { cache: 'no-cache' })).json();
+    const keys = {}; for (const k in man.keys) keys[k] = rgb(man.keys[k]);
+    const gap = man.gap == null ? 1 : man.gap;
+    const found = { parts: 0, shapes: 0 };
+    const sheets = await Promise.all(man.sheets.map((sh) => loadImage(base + sh.file).then((im) => [sh, im], () => null)));
+    for (const got of sheets) {
+      if (!got) continue;
+      const [sh, im] = got, [w, h] = sh.box;
+      const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height;
+      const g = cv.getContext('2d'); g.drawImage(im, 0, 0);
+      const px = g.getImageData(0, 0, im.width, im.height).data; // throws if the browser won't share the pixels
+      const cols = sh.cols || man.cols || 8;
+      const nRows = Math.floor((im.height - gap) / (h + gap)), at = (c, r) => [gap + c * (w + gap), gap + r * (h + gap)];
+      if (sh.type === 'parts') {
+        const set = PARTS[sh.set]; if (!set) continue;
+        for (let i = 0; i < nRows * cols; i++) {
+          const [x, y] = at(i % cols, Math.floor(i / cols));
+          if (x + w > im.width) continue;
+          const rows = readBox(px, im.width, x, y, w, h, keys); if (!rows) continue;
+          const name = (sh.names || [])[i] || sh.set + '-' + (i + 1);
+          if (!set[name]) { const [table, slot] = SET_SLOT[sh.set]; for (const k of OPEN_KINDS[sh.set]) if (table[k] && !table[k][slot].includes(name)) table[k][slot].push(name); }
+          set[name] = rows; found.parts++;
+        }
+      } else if (sh.type === 'layers' || sh.type === 'looks') {
+        const grab = (r) => { const list = []; for (let c = 0; c < cols; c++) { const [x, y] = at(c, r); if (x + w > im.width || y + h > im.height) break; const rows = readBox(px, im.width, x, y, w, h, keys); if (rows) list.push(rows); } return list; };
+        const st = { name: sh.set, match: (sh.match || [sh.set]).map(phraseRe), kinds: sh.kinds || [] };
+        if (sh.type === 'looks') { st.looks = grab(0).map(trimRows); if (!st.looks.length) continue; }
+        else { st.layers = [grab(0), grab(1), grab(2)]; if (!st.layers[0].length) continue; }
+        const old = SETS.findIndex((x) => x.name === st.name); if (old >= 0) SETS.splice(old, 1);
+        SETS.push(st); found.sets = (found.sets || 0) + 1;
+      } else if (sh.type === 'shapes') {
+        (sh.rows || []).forEach((kind, r) => {
+          if (r >= nRows) return;
+          const list = [];
+          for (let c = 0; c < cols; c++) { const [x, y] = at(c, r); if (x + w > im.width) break; const rows = readBox(px, im.width, x, y, w, h, keys); if (rows) list.push(trimRows(rows)); }
+          if (list.length) { SHAPES[kind] = list; found.shapes += list.length; }
+        });
+      }
+    }
+    cache.clear();
+    DF.spriteSheets = found;
+    return found;
+  };
+  if (typeof document !== 'undefined' && typeof fetch !== 'undefined') {
+    DF.spritesReady = DF.loadSpriteSheets().catch((err) => { DF.spriteSheets = null; console.info('Deepforge: using built-in sprites (' + err.message + ')'); return false; });
+  }
 }(window.DF));

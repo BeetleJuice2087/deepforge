@@ -14,7 +14,9 @@ window.DF = window.DF || {};
     chaser: 'Runs straight at you.', shooter: 'Keeps its distance and shoots.', ambusher: 'Hides until you come close.',
     swarm: 'Comes in a pack.', tank: 'Slow and tough, then charges.', summoner: 'Calls little helpers.', trickster: 'Blinks from place to place.',
   };
-  DF.ABILITIES = ['fire trail', 'splits when hit', 'explodes on death', 'freezes floor', 'heals friends', 'shields', 'poisons', 'pulls you in'];
+  DF.ABILITIES = ['fire trail', 'splits when hit', 'explodes on death', 'freezes floor', 'heals friends', 'shields', 'poisons', 'pulls you in',
+    'revives', 'drains life', 'blinks', 'enrages', 'slows you', 'armoured', 'poison trail', 'stuns', 'steals gold', 'charges', 'calls help',
+    'ring shot', 'regenerates', 'pack hunter', 'reflects', 'burrows', 'slams', 'curses', 'rapid fire', 'mutates'];
   DF.POWERS = ['pierce', 'bounce', 'chain', 'lifesteal', 'burn', 'freeze', 'knockback', 'multishot'];
   DF.POWER_TEXT = {
     pierce: 'Swings send out a blade wave that passes through foes.', bounce: 'Swings send out a blade wave that bounces off walls.',
