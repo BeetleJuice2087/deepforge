@@ -109,17 +109,36 @@
       ${pw ? `<ul class="powers">${pw}</ul>` : ''}
       ${it.from ? `<p class="from">Forged from ${esc(it.from[0])} and ${esc(it.from[1])}</p>` : ''}`;
   }
+  /* ---------- Comparing a find with what you're wearing ---------- */
+  const CMP_STATS = ['attack', 'defence', 'health', 'speed', 'luck'];
+  function itemScore(it) { const st = G.itemStats(it); return (st.attack || 0) + (st.defence || 0) + (st.health || 0) / 3 + (st.speed || 0) / 4 + (st.luck || 0) / 3 + (it.powers || []).length * 2; }
+  function verdict(it) {
+    const cur = G.run && G.run.eq[it.type]; if (!cur || cur === it) return cur ? null : 'up';
+    const d = itemScore(it) - itemScore(cur); return d > 0.5 ? 'up' : d < -0.5 ? 'down' : 'same';
+  }
+  const VERDICT = { up: 'Upgrade ▲', down: 'Weaker ▼', same: 'About the same' };
+  function compareBlock(it) {
+    const run = G.run; if (!run || !it) return '';
+    const cur = run.eq[it.type]; if (cur === it) return '';
+    if (!cur) return `<div class="cmp"><div class="cmp-head"><span>Your ${it.type} slot is empty.</span><b class="cmp-v up">${VERDICT.up}</b></div></div>`;
+    const a = G.itemStats(cur), b = G.itemStats(it), v = verdict(it);
+    const rows = CMP_STATS.filter((k) => a[k] || b[k]).map((k) => {
+      const d = (b[k] || 0) - (a[k] || 0), u = k === 'luck' ? '%' : '';
+      return `<div class="cmp-row"><span>${cap(k)}</span><em>${a[k] || 0}${u}</em><i>→</i><em>${b[k] || 0}${u}</em><strong class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' + d : d < 0 ? '−' + -d : '='}</strong></div>`;
+    }).join('');
+    const pa = cur.powers || [], pb = it.powers || [], gain = pb.filter((p) => !pa.includes(p)), lose = pa.filter((p) => !pb.includes(p));
+    const pw = gain.length || lose.length ? `<div class="cmp-row wide"><span>Powers</span><p>${gain.map((p) => `<b class="up">+${cap(p)}</b>`).join(' ')} ${lose.map((p) => `<b class="down">−${cap(p)}</b>`).join(' ')}</p></div>` : '';
+    const ea = cur.element || 'none', eb = it.element || 'none';
+    const el = ea !== eb ? `<div class="cmp-row wide"><span>Element</span><p>${cap(ea)} → ${cap(eb)}</p></div>` : '';
+    return `<div class="cmp"><div class="cmp-head"><img src="${DF.bigPicture('item', cur, 3)}" alt=""><span>vs your <b style="color:${DF.RAR_COLOR[cur.rarity]}">${esc(cur.name)}</b></span><b class="cmp-v ${v}">${VERDICT[v]}</b></div>${rows}${pw}${el}</div>`;
+  }
+  const tileArrow = (it) => { const v = G.run && G.run.eq[it.type] !== it ? verdict(it) : null; return v === 'up' ? '<em class="tile-v up">▲</em>' : v === 'down' ? '<em class="tile-v down">▼</em>' : ''; };
   function weaponFeelText(icon) { return { wand: 'Light, quick swings.', bow: 'Swung like a club. Light.', wrench: 'Solid, steady swings.', sword: 'Balanced swings.', axe: 'Wide swings.', hammer: 'Slow, heavy swings.', spear: 'Long reach, narrow thrust.', dagger: 'Very quick stabs.', mace: 'Heavy swings.' }[icon] || ''; }
   function openItem(ref) {
     if (!G.run || G.mode !== 'play') return;
     const it = G.getRef(ref); if (!it) return;
     const eqd = ref.where === 'eq';
-    let compare = '';
-    if (!eqd && G.run.eq[it.type]) {
-      const now = G.itemStats(G.run.eq[it.type]), nw = G.itemStats(it), keys = new Set([...Object.keys(now), ...Object.keys(nw)]);
-      const diffs = [...keys].map((k) => { const d = (nw[k] || 0) - (now[k] || 0); return d ? `<span class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d} ${k}</span>` : ''; }).filter(Boolean);
-      compare = `<p class="compare">Compared with ${esc(G.run.eq[it.type].name)}: ${diffs.length ? diffs.join(' ') : 'the same numbers'}</p>`;
-    }
+    const compare = eqd ? '' : compareBlock(it);
     const s = openSheet(`${itemBlock(it, true)}${compare}
       <div class="row">${eqd ? `<button class="btn" data-a="off">Take off</button>` : `<button class="btn primary" data-a="eq" data-focus>Equip</button>`}
       <button class="btn ghost" data-a="drop">Drop</button><button class="btn ghost" data-a="close">Close</button></div>`, 'item');
@@ -135,11 +154,13 @@
   }
 
   /* ---------- Full bag: swap something for the item on the floor ---------- */
+  DF.itemVerdict = (it) => verdict(it);
   function openSwap(p) {
     const it = p.item;
     const s = openSheet(`<h2 class="title">Bag full</h2><p class="sub">Pick something to leave here in exchange for this:</p>
-      ${itemBlock(it, false)}
-      <div class="grid">${G.run.bag.map((b, i) => b ? `<button class="tile" data-i="${i}" style="--r:${DF.RAR_COLOR[b.rarity]}"><img src="${DF.bigPicture('item', b, 3)}" alt=""><span>${esc(b.name)}</span></button>` : '').join('')}</div>
+      ${itemBlock(it, false)}${compareBlock(it)}
+      <p class="sub cmp-hint">▲ better than what you wear · ▼ weaker</p>
+      <div class="grid">${G.run.bag.map((b, i) => b ? `<button class="tile" data-i="${i}" style="--r:${DF.RAR_COLOR[b.rarity]}">${tileArrow(b)}<img src="${DF.bigPicture('item', b, 3)}" alt=""><span>${esc(b.name)}</span></button>` : '').join('')}</div>
       <div class="row"><button class="btn ghost" data-a="close" data-focus>Leave it</button></div>`);
     s.onclick = (e) => {
       const t = e.target.closest('[data-i],[data-a]'); if (!t) return;
@@ -239,12 +260,7 @@
     let detail = '';
     if (selItem) {
       const eqd = sel.ref.where === 'eq';
-      let compare = '';
-      if (!eqd && run.eq[selItem.type]) {
-        const a = G.itemStats(run.eq[selItem.type]), b = G.itemStats(selItem), keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-        const diffs = [...keys].map((k) => { const d = (b[k] || 0) - (a[k] || 0); return d ? `<span class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d} ${k}</span>` : ''; }).filter(Boolean);
-        compare = `<p class="compare">Compared with ${esc(run.eq[selItem.type].name)}: ${diffs.length ? diffs.join(' ') : 'the same numbers'}</p>`;
-      }
+      const compare = eqd ? '' : compareBlock(selItem);
       detail = `${itemBlock(selItem, false)}${compare}<div class="row">${eqd ? '<button class="btn small" data-a="off">Take off</button>' : '<button class="btn small primary" data-a="eq">Equip</button>'}<button class="btn small ghost" data-a="drop">Drop</button></div>`;
     } else if (sel.ref) {
       detail = `<p class="inv-empty">Nothing in this slot. ${sel.ref.where === 'eq' ? `Equip a ${sel.ref.slot} from your bag to fill it.` : 'Room for one more find.'}</p>`;
@@ -294,7 +310,7 @@
   function openStall(st) {
     const gold = G.meta.gold, short = Math.max(0, st.price - gold);
     let body;
-    if (st.kind === 'item') body = itemBlock(st.item, true);
+    if (st.kind === 'item') body = itemBlock(st.item, true) + compareBlock(st.item);
     else if (st.kind === 'potion') body = `<div class="item-head"><img class="pix big" src="${DF.bigPicture('item', { icon: 'potion', colors: ['#ff4a6a', '#cfc8dc'], element: 'none' }, 8)}" alt="" style="--r:#ff4a6a">
       <div><h2 style="color:#ff6a8a">Healing potion</h2><p class="sub">Potion</p></div></div><p class="desc">Heals nearly half your health and cures poison. Drink it with the potion button or <kbd>Q</kbd>.</p>`;
     else body = spellBlock(st.spell, 'Spell scroll for sale');

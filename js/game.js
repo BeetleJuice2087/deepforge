@@ -1183,7 +1183,8 @@
         if (slot < 0) { swapWith = p; if (!p.warned) { p.warned = true; DF.UI.toast('Your bag is full (6 of 6). Tap Swap to leave something here instead.'); } continue; }
         run.bag[slot] = p.item; room.pickups.splice(i, 1); SND.pickup();
         recordItem(p.item);
-        DF.UI.toast(`<b style="color:${DF.RAR_COLOR[p.item.rarity]}">${DF.UI.esc(p.item.name)}</b> ${DF.RARITY[p.item.rarity].toLowerCase()} ${p.item.type}`, 2600, true);
+        { const v = DF.itemVerdict ? DF.itemVerdict(p.item) : null; const tag = v === 'up' ? ' <b class="t-up">\u25b2 upgrade</b>' : v === 'down' ? ' <b class="t-down">\u25bc weaker</b>' : '';
+          DF.UI.toast(`<b style="color:${DF.RAR_COLOR[p.item.rarity]}">${DF.UI.esc(p.item.name)}</b> ${DF.RARITY[p.item.rarity].toLowerCase()} ${p.item.type}${tag}`, 2600, true); }
         updateHUD(true); saveRun();
       }
     }
