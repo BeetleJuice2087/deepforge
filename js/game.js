@@ -73,8 +73,26 @@
     else if (r < 0.42 + floorN * 0.02) rar = 1;
     return Math.max(rar, min || 0);
   }
-  function makeItem(spec, rarity, lvl) {
+  // A weapon found by a ranger becomes a bow, by a mage a wand or staff, by a tinkerer a wrench or hammer.
+  function classWeapon(it, cls) {
+    const kit = DF.CLASS_WEAPONS[cls];
+    if (!kit || it.type !== 'weapon' || kit[it.icon]) return;
+    const icons = Object.keys(kit), r = DF.seeded(it.name + '|' + cls), icon = icons[r(icons.length)], noun = kit[icon][r(kit[icon].length)];
+    const nounRe = new RegExp('\\b(' + DF.WEAPON_NOUNS.join('|') + ')\\b', 'i');
+    const m = String(it.name || '').match(nounRe);
+    const old = m ? m[1] : it.icon;
+    if (m) it.name = it.name.replace(nounRe, noun);
+    if (it.description) {
+      const art = /^[aeiou]/i.test(noun) ? 'an' : 'a';
+      it.description = it.description
+        .replace(new RegExp('\\b(an?) ' + old + '\\b', 'i'), (all, a0) => (a0[0] === 'A' ? art[0].toUpperCase() + art.slice(1) : art) + ' ' + noun.toLowerCase())
+        .replace(new RegExp('\\b' + old + '\\b', 'gi'), noun.toLowerCase());
+    }
+    it.icon = icon;
+  }
+  function makeItem(spec, rarity, lvl, cls) {
     const it = Object.assign({}, spec, { uid: newUid(), rarity: clamp(rarity | 0, 0, 4), lvl: Math.max(0, lvl | 0) });
+    classWeapon(it, cls || (run && run.cls));
     it.colors = (spec.colors || []).slice(0, 2);
     if (it.type === 'weapon') {
       const [lo, hi] = DF.POWER_COUNT[it.rarity], r = DF.seeded(it.name);
@@ -106,6 +124,7 @@
     sword: { range: 11, arc: 2.0, cd: 0.32, mult: 1 }, axe: { range: 11, arc: 2.6, cd: 0.38, mult: 1.1 }, hammer: { range: 11, arc: 2.1, cd: 0.46, mult: 1.35 },
     spear: { range: 15, arc: 1.1, cd: 0.34, mult: 1 }, dagger: { range: 9, arc: 1.8, cd: 0.22, mult: 0.8 }, mace: { range: 10, arc: 2.2, cd: 0.4, mult: 1.2 },
     wand: { range: 10, arc: 1.6, cd: 0.3, mult: 0.85 }, bow: { range: 9, arc: 1.6, cd: 0.3, mult: 0.8 }, wrench: { range: 11, arc: 2.2, cd: 0.34, mult: 1.05 },
+    crossbow: { range: 9, arc: 1.6, cd: 0.3, mult: 0.8 }, staff: { range: 10, arc: 1.6, cd: 0.3, mult: 0.85 },
   };
   function recordItem(it) {
     const k = norm(it.name); if (!k) return false;
@@ -409,7 +428,7 @@
     c.prio = 6; if (!c.dreaming || (c.failed && AI.ready())) { c.failed = false; dream(c); }
     cls = DF.CLASSES[cls] ? cls : 'knight'; meta.lastCls = cls;
     const kit = DF.STARTERS[cls];
-    run = { floorN: 1, content: null, next: null, cls, eq: { weapon: makeItem(kit.weapon, 0, 0), armour: makeItem(kit.armour, 0, 0), trinket: null },
+    run = { floorN: 1, content: null, next: null, cls, eq: { weapon: makeItem(kit.weapon, 0, 0, cls), armour: makeItem(kit.armour, 0, 0, cls), trinket: null },
       bag: Array(6).fill(null), potions: 1 + st0.satchel, kills: 0, gold: 0, forged: 0, usedFallbacks: [], startedAt: Date.now() };
     // Give the AI a few seconds to finish floor 1, but never make you wait long.
     if (AI.ready() && !contentReady(c) && (AI.settings.mode === 'cloud' || AI.local.engine)) {
@@ -2361,7 +2380,7 @@
   /* ================= The forge ================= */
   const EL_PREFIX = { fire: 'Ember', ice: 'Frost', lightning: 'Storm', poison: 'Venom', earth: 'Stone', light: 'Radiant', shadow: 'Shade', nature: 'Thorn', none: 'Twin' };
   const ICON_NOUN = { sword: 'Blade', axe: 'Cleaver', hammer: 'Maul', spear: 'Lance', dagger: 'Fang', mace: 'Crusher', helm: 'Crown', chestplate: 'Plate', shield: 'Bulwark',
-    boots: 'Treads', cloak: 'Mantle', gauntlets: 'Fists', ring: 'Band', amulet: 'Pendant', gem: 'Shard', orb: 'Eye', charm: 'Token', feather: 'Plume', wand: 'Rod', bow: 'Longbow', wrench: 'Spanner' };
+    boots: 'Treads', cloak: 'Mantle', gauntlets: 'Fists', ring: 'Band', amulet: 'Pendant', gem: 'Shard', orb: 'Eye', charm: 'Token', feather: 'Plume', wand: 'Rod', bow: 'Longbow', wrench: 'Spanner', crossbow: 'Arbalest', staff: 'Stave' };
   function fallbackForge(a, b) {
     const types = a.type === b.type ? [a.type] : [a.type, b.type];
     const type = pick(types), base = a.type === type ? a : b, other = base === a ? b : a;
@@ -2430,7 +2449,7 @@
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },
   });
   // For testing from the browser console.
-  G.debug = { get floor() { return floor; }, enterRoom, breakProp, makeEnemy, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
+  G.debug = { get floor() { return floor; }, enterRoom, breakProp, makeEnemy, dropItem, makeItem, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
   DF.G = G;
   DF.boot = function () { resize(); requestAnimationFrame((t) => { lastT = t; frame(t); }); prepareNextRun(); };
 }(window.DF));

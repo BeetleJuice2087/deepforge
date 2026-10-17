@@ -195,6 +195,15 @@ window.DF = window.DF || {};
     },
   };
   DF.STARTER = DF.STARTERS.knight;
+  // Weapons found in the dungeon take the shape your class fights with (a ranger finds bows, not swords).
+  DF.CLASS_WEAPONS = {
+    ranger: { bow: ['Bow', 'Longbow', 'Shortbow', 'Recurve'], crossbow: ['Crossbow', 'Arbalest', 'Repeater'] },
+    mage: { wand: ['Wand', 'Rod', 'Scepter'], staff: ['Staff', 'Stave', 'Crook'] },
+    tinkerer: { wrench: ['Wrench', 'Spanner', 'Ratchet'], hammer: ['Hammer', 'Mallet', 'Maul'] },
+  };
+  DF.WEAPON_NOUNS = ['Blade', 'Sword', 'Saber', 'Edge', 'Axe', 'Cleaver', 'Hatchet', 'Hammer', 'Maul', 'Mallet', 'Spear', 'Lance', 'Pike', 'Dagger', 'Fang', 'Shiv',
+    'Knife', 'Mace', 'Morningstar', 'Crusher', 'Bow', 'Longbow', 'Shortbow', 'Recurve', 'Crossbow', 'Arbalest', 'Repeater', 'Wand', 'Rod', 'Scepter', 'Staff', 'Stave',
+    'Crook', 'Wrench', 'Spanner', 'Ratchet', 'Club', 'Flail', 'Scythe', 'Sickle', 'Glaive', 'Halberd', 'Rapier', 'Katana', 'Scimitar', 'Cutlass', 'Claymore', 'Trident'];
   // The heroes you can play. More can join later.
   DF.CLASSES = {
     knight: { name: 'Knight', hp: 30, atk: 4, spd: 42, mana: 0,
@@ -283,6 +292,8 @@ window.DF = window.DF || {};
     bow: ['....aa..', '...a..b.', '..a...b.', '.a....b.', '.a....b.', '..a...b.', '...a..b.', '....aa..'],
     wrench: ['.....aa.', '....a..a', '.....a.a', '....aaa.', '...a....', '..b.....', '.b......', 'b.......'],
     wand: ['......e.', '.....eae', '......e.', '....c...', '...c....', '..c.....', '.c......', 'c.......'],
+    crossbow: ['..a.....', '.a.b....', '.a..b...', 'cccccbee', '.a..b...', '.a.b....', '..a.....', '........'],
+    staff: ['.....aa.', '....aeea', '....aeaa', '.....aa.', '....c...', '...c....', '..c.....', '.c......'],
     scroll: ['........', '.bbbbbb.', '.aaaaaa.', '.adaada.', '.aaaaaa.', '.addaaa.', '.bbbbbb.', '........'],
     potion: ['...dd...', '...bb...', '..b..b..', '.baaaab.', 'baeaaaab', 'baaaaaab', '.baaaab.', '..bbbb..'],
     coin: ['.aaaa.', 'aeaaab', 'aaebab', 'aabaab', 'aaaaab', '.abbb.'],
