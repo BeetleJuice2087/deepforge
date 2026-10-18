@@ -238,11 +238,12 @@
     if (!c.planned) { const plan = planReturning(c, theme.element); plan.picks.forEach((s, i) => { if (s && !c.monsters[i]) c.monsters[i] = s; }); if (plan.boss && !c.boss) c.boss = plan.boss; }
     const monsters = [0, 1, 2, 3].map((i) => Object.assign({}, c.monsters[i] || fb.monsters[i]));
     const boss = Object.assign({}, c.boss || fb.boss, { boss: true, named: c.n % 5 === 0 });
-    const loot = [0, 1, 2, 3, 4, 5].map((i) => {
-      if (c.loot[i]) return c.loot[i];
-      const type = DF.ITEM_TYPES[i % 3];
-      return fb.loot.find((x, k) => x.type === type && k % 2 === (i < 3 ? 0 : 1)) || fb.loot.find((x) => x.type === type) || fb.loot[i % 4];
-    });
+    // The floor's treasure: the AI's own finds first, then the floor's list, then generated armour for any
+    // place to wear things the list doesn't cover yet (so helms, gloves and boots turn up too).
+    const loot = [], seen = new Set(), slotOf = (x) => (x.type === 'armour' ? DF.ARMOUR_SLOT[x.icon] || 'body' : x.type);
+    const add = (x) => { if (x && !seen.has(x.name)) { seen.add(x.name); loot.push(x); } };
+    c.loot.forEach(add); fb.loot.forEach(add);
+    gen.loot.filter((x) => x.type === 'armour' && !loot.some((y) => slotOf(y) === slotOf(x))).forEach(add);
     const fromAI = { theme: !!c.theme, monsters: c.monsters.filter(Boolean).length, boss: !!c.boss };
     return { n: c.n, theme, monsters, boss, loot, fromAI, fallback: c.theme || fb.generated ? '' : fb.name };
   }
@@ -1345,7 +1346,20 @@
   // Loot for this floor: the AI's own treasure when it's ready, the floor's list otherwise.
   function lootSpec() {
     const live = run.live && run.live.theme && run.live.theme.name === run.content.theme.name ? run.live.loot.filter(Boolean) : [];
-    return live.length && rnd() < 0.8 ? pick(live) : pick(run.content.loot);
+    return pickLoot(live.length && rnd() < 0.8 ? live : run.content.loot);
+  }
+  // Finds lean toward what you're missing: armour for an empty slot is about 3x as likely, and trinkets are
+  // likelier while a trinket slot is empty. Weapons come up a little less often.
+  function pickLoot(list) {
+    if (!list || !list.length) return pick(run.content.loot);
+    const w = list.map((x) => {
+      if (x.type === 'weapon') return 0.8;
+      if (x.type === 'trinket') return run.eq.trinket1 && run.eq.trinket2 ? 0.8 : 1.4;
+      return run.eq[DF.ARMOUR_SLOT[x.icon] || 'body'] ? 1 : 3;
+    });
+    let t = rnd() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < list.length; i++) { t -= w[i]; if (t <= 0) return list[i]; }
+    return list[list.length - 1];
   }
   function dropItem(x, y, spec, minRar) {
     const it = makeItem(spec, rollRarity(run.floorN, stats().luckF, minRar), run.floorN);
@@ -2497,7 +2511,7 @@
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },
   });
   // For testing from the browser console.
-  G.debug = { get floor() { return floor; }, enterRoom, breakProp, makeEnemy, dropItem, makeItem, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
+  G.debug = { get floor() { return floor; }, enterRoom, breakProp, makeEnemy, dropItem, makeItem, lootSpec, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
   DF.G = G;
   DF.boot = function () { resize(); requestAnimationFrame((t) => { lastT = t; frame(t); }); prepareNextRun(); };
 }(window.DF));

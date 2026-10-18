@@ -222,8 +222,8 @@
     return { name: avoid.includes(name) ? name + ' II' : name, description, colors: monsterColors(R, th.element), element: th.element, weakness: DF.NATURAL_WEAKNESS[th.element], tier: 3, behaviour, abilities, body: bodyOf(noun),
       special: prof ? prof.s[0] : '', specialText: prof ? prof.s[1] : '' };
   }
-  function item(R, th, type) {
-    const icon = R.pick(DF.ICONS[type]), noun = R.pick(ICON_NOUNS[icon]);
+  function item(R, th, type, forceIcon) {
+    const icon = forceIcon || R.pick(DF.ICONS[type]), noun = R.pick(ICON_NOUNS[icon]);
     const elemental = R() < 0.6, el = elemental ? (R() < 0.75 ? th.element : R.pick(NEIGHBOURS[th.element])) : 'none';
     const W = EL[el];
     let name;
@@ -254,7 +254,11 @@
       const avoid = [], monsters = [];
       for (let i = 0; i < 4; i++) { const m = monster(R, th, i, avoid); monsters.push(m); avoid.push(m.name); }
       const b = boss(R, th, n % 5 === 0, avoid);
-      const loot = [0, 1, 2, 3, 4, 5].map((i) => item(R, th, DF.ITEM_TYPES[i % 3]));
+      // Treasure: 3 weapons, 3 trinkets and 4 armour pieces, each for a different place to wear it.
+      const SLOT_ICONS = { head: ['helm'], body: ['chestplate', 'cloak'], hands: ['gauntlets'], feet: ['boots'], offhand: ['shield'] };
+      const slots = Object.keys(SLOT_ICONS).sort(() => R() - 0.5).slice(0, 4);
+      const loot = [item(R, th, 'weapon'), item(R, th, 'weapon'), item(R, th, 'weapon'), item(R, th, 'trinket'), item(R, th, 'trinket'), item(R, th, 'trinket')]
+        .concat(slots.map((s) => item(R, th, 'armour', R.pick(SLOT_ICONS[s]))));
       return Object.assign({}, th, { monsters, boss: b, loot, generated: true });
     },
     theme: (seed, element) => theme(rngFrom('deepforge-theme|' + seed), element),
