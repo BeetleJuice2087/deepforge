@@ -798,6 +798,22 @@
     for (let i = 1; i < n; i++) { const x = a.x + (b.x - a.x) * i / n, y = a.y + (b.y - a.y) * i / n, t = tileAt(Math.floor(x / T), Math.floor(y / T)); if (t === TL.WALL || t === TL.BLOCK || t === TL.BRAZIER) return false; }
     return true;
   }
+  // Somewhere a dropped thing can lie: plain floor (not a wall, pillar, pit, pool, crate or doorway).
+  const restTile = (tx, ty) => tx >= 1 && ty >= 1 && tx <= RW - 2 && ty <= RH - 2 && room.tiles[ty * RW + tx] === TL.FLOOR && !propAt(tx, ty) && !isDoorTile(tx, ty);
+  // Move a dropped item, coin or heart off walls and holes onto the nearest open floor.
+  function settlePickup(p) {
+    p.settled = true;
+    const tx = Math.floor(p.x / T), ty = Math.floor(p.y / T);
+    // Item icons stand taller than a tile, so keep them off the top row where they'd poke into the wall.
+    const ok = (x, y) => restTile(x, y) && !(p.kind === 'item' && y < 2);
+    if (ok(tx, ty)) { const cx = tx * T + T / 2, cy = ty * T + T / 2; p.x = cx + clamp(p.x - cx, -3, 3); p.y = cy + clamp(p.y - cy, -3, 3); return; }
+    let best = null, bd = Infinity;
+    for (let r = 1; r <= 7 && !best; r++) for (let y = ty - r; y <= ty + r; y++) for (let x = tx - r; x <= tx + r; x++) {
+      if (Math.max(Math.abs(x - tx), Math.abs(y - ty)) !== r || !ok(x, y)) continue;
+      const d = Math.hypot(x * T + T / 2 - p.x, y * T + T / 2 - p.y); if (d < bd) { bd = d; best = { x, y }; }
+    }
+    if (best) { p.x = best.x * T + T / 2 + (rnd() - 0.5) * 3; p.y = best.y * T + T / 2 + (rnd() - 0.5) * 3; }
+  }
   function randomFloorNear(cx, cy, minD, maxD) {
     for (let k = 0; k < 40; k++) {
       const a = rnd() * Math.PI * 2, d = minD + rnd() * (maxD - minD), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
@@ -1642,6 +1658,7 @@
     if (fx.particles.length > 500) fx.particles.splice(0, fx.particles.length - 500);
     for (const t of fx.texts) { t.life -= dt; t.y -= dt * (t.big ? 10 : 14); }
     fx.texts = fx.texts.filter((t) => t.life > 0);
+    for (const p of room.pickups) if (!p.settled) settlePickup(p);
     for (const p of room.pickups) if (p.vy != null) { p.z = (p.z || 0) + p.vy * dt; p.vy += 120 * dt; if (p.z > 0) { p.z = 0; p.vy = null; } }
   }
 
