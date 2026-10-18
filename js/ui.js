@@ -197,13 +197,51 @@
   const WEAPON_WORD = { knight: 'Weapon', mage: 'Focus', ranger: 'Bow', tinkerer: 'Tool' };
   const WEAPON_HINT = { knight: 'Your sword arc', mage: 'Powers your bolts', ranger: 'Powers your arrows', tinkerer: 'Your wrench swing' };
   const MOVE_CD = { knight: [0, 2.2, 0], mage: [0, 1.6, 0], ranger: [0, 1.1, 4], tinkerer: [0, 6, 3.5] };
-  let invSel = null;
+  let invSel = null, invDragOff = null;
   function openInventory() {
     if (!G.run || G.mode !== 'play' || !$('#modal').hidden) return;
     invSel = invSel && G.getRef(invSel.ref || {}) ? invSel : { ref: { where: 'eq', slot: 'weapon' } };
     const s = openSheet('', 'wide inv');
     const draw = () => { s.innerHTML = invHTML(); };
+    const refOf = (v) => (v.startsWith('eq:') ? { where: 'eq', slot: v.slice(3) } : v.startsWith('bag:') ? { where: 'bag', i: +v.slice(4) } : null);
+    // Drag an item onto another slot to move it there (they swap places). A tap without moving still selects.
+    let drag = null, justDragged = false;
+    s.onpointerdown = (e) => {
+      const t = e.target.closest('.inv-slot.filled[data-sel]'); if (!t || e.button > 0) return;
+      const ref = refOf(t.dataset.sel); if (!ref) return;
+      drag = { ref, el: t, x: e.clientX, y: e.clientY, ghost: null, id: e.pointerId };
+    };
+    s.ondragstart = (e) => e.preventDefault(); // no built-in image dragging: we do our own
+    const onMove = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.ghost) {
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+        const img = drag.el.querySelector('img'); if (!img) { drag = null; return; }
+        drag.ghost = img.cloneNode(); drag.ghost.className = 'drag-ghost pix'; document.body.appendChild(drag.ghost);
+        drag.el.classList.add('dragging'); s.classList.add('is-dragging');
+      }
+      e.preventDefault();
+      drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+      const over = document.elementFromPoint(e.clientX, e.clientY), slot = over && over.closest('.inv-slot[data-sel]');
+      s.querySelectorAll('.drop-hover').forEach((x) => x.classList.remove('drop-hover'));
+      if (slot && refOf(slot.dataset.sel) && slot !== drag.el) slot.classList.add('drop-hover');
+    };
+    const onUp = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const d = drag; drag = null;
+      if (!d.ghost) return; // just a tap: the click handler selects it
+      d.ghost.remove(); s.classList.remove('is-dragging'); justDragged = true; setTimeout(() => { justDragged = false; }, 50);
+      const over = document.elementFromPoint(e.clientX, e.clientY), slot = over && over.closest('.inv-slot[data-sel]');
+      const to = slot && refOf(slot.dataset.sel);
+      if (to) { const why = G.moveItem(d.ref, to); if (why && why !== 'same') toast(why); else if (!why) invSel = { ref: to }; }
+      draw();
+    };
+    if (invDragOff) invDragOff();
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onUp);
+    invDragOff = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onUp); invDragOff = null; };
     s.onclick = (e) => {
+      if (justDragged) return;
       const t = e.target.closest('[data-sel],[data-a]'); if (!t) return;
       if (t.dataset.sel) { const v = t.dataset.sel; invSel = v === 'scroll' || v === 'potion' ? { kind: v } : v.startsWith('eq:') ? { ref: { where: 'eq', slot: v.slice(3) } } : { ref: { where: 'bag', i: +v.slice(4) } }; draw(); return; }
       const a = t.dataset.a, ref = invSel && invSel.ref;
@@ -292,7 +330,7 @@
         <section class="inv-panel"><h3>Stats</h3>${stats}</section>
       </div>
       <section class="inv-panel"><h3>Moves</h3><ul class="inv-moves">${moves.join('')}</ul>${extra}</section>
-      <section class="inv-panel"><h3>Bag <span class="${n >= run.bag.length ? 'full' : ''}">${n}/${run.bag.length}</span></h3><div class="inv-bag">${bag}<i class="sep"></i>${potionSlot}${scrollSlot}</div></section>
+      <section class="inv-panel"><h3>Bag <span class="${n >= run.bag.length ? 'full' : ''}">${n}/${run.bag.length}</span></h3><div class="inv-bag" style="--cols:${({ 8: 8, 12: 6, 16: 8, 20: 10 })[run.bag.length] || 10};--cols-s:${({ 8: 4, 12: 6, 16: 4, 20: 5 })[run.bag.length] || 5}">${bag}</div><div class="inv-supplies"><span>Supplies</span>${potionSlot}${scrollSlot}<small class="drag-hint">Drag items to move or swap them.</small></div></section>
       <section class="inv-panel inv-detail">${detail}</section>
       <div class="inv-foot"><span><i class="coin"></i> ${m.gold} gold</span><span>${run.kills} defeated</span><span>${run.forged} forged</span><span class="keyhint"><kbd>Tab</kbd> close</span></div>`;
   }
