@@ -3,7 +3,7 @@
    away when online), falling back to the saved copy when offline. Fonts come
    from the saved copy and refresh in the background. Everything else (the AI
    Worker, the on-device AI download) is left alone. */
-const CACHE = 'deepforge-v48';
+const CACHE = 'deepforge-v49';
 const MUSIC = 'deepforge-music-v1'; // the soundtrack: saved the first time each track plays, kept across updates
 const offline = new Set(); // pages that opened from the saved copy
 // Monster sprite sheets (sprites/): saved for offline play too.

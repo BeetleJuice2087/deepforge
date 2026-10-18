@@ -1044,10 +1044,10 @@
   {
    "set": "wraith",
    "file": "monsters/wraith.png",
-   "type": "layers",
+   "type": "looks",
    "box": [
-    8,
-    9
+    12,
+    12
    ],
    "match": [
     "wraith"
