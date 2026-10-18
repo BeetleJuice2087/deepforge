@@ -50,7 +50,7 @@
     { id: 'tough', name: 'Toughness', text: '+1 defence', max: Infinity, cost: steep(30, 25) },
     { id: 'fort', name: 'Fortune', text: '+4% luck: crits and better loot', max: 14, cost: steep(40, 30) },
     { id: 'satchel', name: 'Satchel', text: '+1 potion at the start of each run', max: 5, cost: (l) => 60 + l * 60 },
-    { id: 'pack', name: 'Bigger Pack', text: '+2 bag slots (you start with 8)', max: 2, cost: (l) => 120 + l * 120 },
+    { id: 'pack', name: 'Bigger Pack', text: '+4 bag slots (8 \u2192 12 \u2192 16 \u2192 20)', max: 3, cost: (l) => [120, 260, 450][l] || 450 },
   ];
   // Returns '' when bought, or the reason it couldn't be.
   function buyUpgrade(id) {
@@ -396,8 +396,8 @@
   let action = null; // the context button: open a chest, forge, descend
   const input = { mx: 0, my: 0, attack: false, bash: false, spell: false, spell2: false, act: false, keys: new Set() };
 
-  // How many bag slots you have: 8, and 2 more for each Bigger Pack upgrade.
-  const bagSize = () => 8 + 2 * (meta.up.pack || 0);
+  // How many bag slots you have: 8, and 4 more for each Bigger Pack upgrade (up to 20).
+  const bagSize = () => 8 + 4 * Math.min(3, meta.up.pack || 0);
   // The first empty bag slot (-1 when full). Treats any empty value as empty, and keeps the bag at its size
   // (it only grows: a smaller bag never throws items away).
   function freeSlot() {
@@ -2436,6 +2436,23 @@
     const i = freeSlot(); if (i < 0) { DF.UI.toast(bagFullMsg() + ' Drop or forge something first.'); return false; }
     run.eq[slot] = null; run.bag[i] = it; P.hp = Math.min(P.hp, stats().maxHp); updateHUD(true); saveRun(); return true;
   }
+  // Drag and drop in the hero panel: move an item from one place to another, swapping with whatever is there.
+  // Returns '' when it worked, or why it couldn't.
+  function moveItem(from, to) {
+    if (!run || !from || !to) return 'nothing';
+    const a = getRef(from), b = getRef(to);
+    if (!a || a === b) return 'same';
+    const kindOf = (s) => (s.startsWith('trinket') ? 'trinket' : s);
+    const fits = (it, ref) => !it || ref.where !== 'eq' || slotKind(it) === kindOf(ref.slot);
+    if (!fits(a, to)) return `${a.name} can't be worn there.`;
+    if (!fits(b, from)) return `${b.name} can't be worn there, so they can't swap.`;
+    const before = stats().maxHp;
+    setRef(to, a); setRef(from, b || null);
+    const after = stats().maxHp; if (after > before) P.hp += after - before; P.hp = Math.min(P.hp, after);
+    if (from.where === 'eq' || to.where === 'eq') SND.clink(0.5);
+    updateHUD(true); saveRun();
+    return '';
+  }
   function dropRef(ref) {
     const it = getRef(ref); if (!it) return;
     setRef(ref, null);
@@ -2522,7 +2539,7 @@
     meta: { get: () => meta }, run: { get: () => run }, P: { get: () => P }, room: { get: () => room },
   });
   Object.assign(G, {
-    saveMeta, UPGRADES, buyUpgrade, buyStall, sellPrice, sellItem, slotFor, slotKind, itemScore, bagSize, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
+    saveMeta, UPGRADES, buyUpgrade, buyStall, sellPrice, sellItem, slotFor, slotKind, itemScore, bagSize, moveItem, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
     prepareNextRun, resize, updateHUD, drawMinimap,
     resetAll() { localStorage.removeItem(META_KEY); meta = defaultMeta(); saveMeta(true); },
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },

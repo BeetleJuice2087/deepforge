@@ -231,10 +231,12 @@
       const d = drag; drag = null;
       if (!d.ghost) return; // just a tap: the click handler selects it
       d.ghost.remove(); s.classList.remove('is-dragging'); justDragged = true; setTimeout(() => { justDragged = false; }, 50);
-      const over = document.elementFromPoint(e.clientX, e.clientY), slot = over && over.closest('.inv-slot[data-sel]');
-      const to = slot && refOf(slot.dataset.sel);
-      if (to) { const why = G.moveItem(d.ref, to); if (why && why !== 'same') toast(why); else if (!why) invSel = { ref: to }; }
-      draw();
+      try {
+        const over = document.elementFromPoint(e.clientX, e.clientY), slot = over && over.closest('.inv-slot[data-sel]');
+        const to = slot && refOf(slot.dataset.sel);
+        if (to && typeof G.moveItem !== 'function') toast('Update js/game.js to drag items around.');
+        else if (to) { const why = G.moveItem(d.ref, to); if (why && why !== 'same') toast(why); else if (!why) invSel = { ref: to }; }
+      } finally { draw(); } // always redraw, so nothing is left faded mid-drag
     };
     if (invDragOff) invDragOff();
     window.addEventListener('pointermove', onMove, { passive: false });
