@@ -1,0 +1,66 @@
+DEEPFORGE SPRITE SHEETS
+=======================
+
+The game loads its monster shapes from the PNG files in this folder.
+Open one in any pixel editor (Aseprite, Piskel, Pixilart, LibreSprite...),
+draw, save as PNG, and upload it to the same place.
+
+COLOURS
+  Pure red   (#ff0000)  = the monster's main colour
+  Pure green (#00ff00)  = its second colour
+  Pure blue  (#0000ff)  = its dark colour (feet, shadows, mouths)
+  Pure white (#ffffff)  = eyes and teeth
+  Pure pink  (#ff00ff)  = a shade between main and dark
+  Pure cyan  (#00ffff)  = a bright highlight
+  The game swaps these for each monster's own colours (fire monsters
+  turn orange, ice ones pale blue, and so on).
+  ANY OTHER COLOUR stays exactly as you drew it (a gold crown stays gold).
+  Transparent = empty. The black outline is added by the game; don't draw it.
+
+THE GRID
+  Every sheet is a grid of equal boxes, 8 boxes per row, with a
+  1-pixel empty gap around every box. Box sizes:
+
+    parts/tops.png            7 wide x 3 tall   (heads, hoods, helmets)
+    parts/middles.png         7 x 3             (bodies, weapons, robes)
+    parts/bottoms.png         7 x 2             (legs, tails, wisps)
+    parts/beast-backs.png     4 x 6             (tails, back half)
+    parts/beast-middles.png   3 x 6             (bellies, wings, plates)
+    parts/beast-heads.png     4 x 6             (heads, facing right)
+    monsters.png             12 x 12            (whole monsters)
+
+  Look at guides/*-guide.png for a big labelled copy of each sheet.
+
+ADDING AND CHANGING
+  - Change a box: draw over it. It keeps its name (see the guide).
+  - Add a part: draw in an empty box. New parts are used by plain
+    people (tops/middles/bottoms) or plain four-legged beasts.
+  - monsters.png has one row per kind of monster (the guide shows the
+    names). Draw extra looks in the empty boxes of a row; whole monsters
+    can be any size up to 12 x 12 and are stood on the bottom.
+    The rows blob, serpent, fish, bird, bug and horse start empty: those
+    are drawn by code until you draw something there.
+  - Monsters face RIGHT. The game flips them when they walk left.
+  - Need more space? Make the image taller in whole rows of boxes
+    (box height + 1 pixel each).
+
+MONSTER SETS (the monsters/ folder)
+  Each monster has its own PNG in monsters/, with boxes 10 per row.
+  Most have THREE rows: tops, middles and bottoms. The game stacks one
+  of each (they line up box for box), so 10 x 10 x 10 = 1000 looks.
+  A few (slug, gargoyle, ghoul, mummy, vampire, wisp mage, beholder,
+  mind flayer, reaper, thief, assassin, bandit, ninja) have ONE row of
+  whole monsters instead.
+  guides/monsters/ shows each file big, with its box size.
+  - Change or add a look: draw in a box of that monster's file.
+  - Which monster gets which file: sprites.json, the "match" words.
+    "Goblin Archer" uses goblin_archer.png because it has both words;
+    a plain "Frost Goblin" uses goblin.png.
+  - A brand-new monster: copy a file, draw over it, and add an entry
+    for it in sprites.json (copy one and change "set", "file", "box"
+    and "match"). Or send it to Claude to add.
+
+IF IT DOESN'T SHOW UP
+  The sheets only load when the game runs from a website (GitHub Pages
+  or itch.io). Opened straight from a file on your computer, the browser
+  won't let the game read the pictures, so it uses the built-in drawings.

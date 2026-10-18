@@ -462,10 +462,10 @@
   {
    "set": "assassin",
    "file": "monsters/assassin.png",
-   "type": "layers",
+   "type": "looks",
    "box": [
-    11,
-    10
+    12,
+    12
    ],
    "match": [
     "assassin",
@@ -481,10 +481,10 @@
   {
    "set": "bandit",
    "file": "monsters/bandit.png",
-   "type": "layers",
+   "type": "looks",
    "box": [
-    11,
-    10
+    12,
+    12
    ],
    "match": [
     "bandit",
@@ -520,10 +520,10 @@
   {
    "set": "ninja",
    "file": "monsters/ninja.png",
-   "type": "layers",
+   "type": "looks",
    "box": [
-    10,
-    10
+    12,
+    12
    ],
    "match": [
     "ninja",
@@ -537,10 +537,10 @@
   {
    "set": "thief",
    "file": "monsters/thief.png",
-   "type": "layers",
+   "type": "looks",
    "box": [
-    10,
-    10
+    12,
+    12
    ],
    "match": [
     "thief",
