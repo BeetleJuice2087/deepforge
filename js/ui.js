@@ -108,12 +108,13 @@
     const RANGER_POWER = { pierce: 'Arrows pass through foes.', bounce: 'Arrows bounce off walls.', multishot: 'Shoots three arrows at once.' };
     const pw = (it.powers || []).map((p) => `<li><b>${cap(p)}</b> ${esc((mage && MAGE_POWER[p]) || (ranger && RANGER_POWER[p]) || DF.POWER_TEXT[p])}</li>`).join('');
     const feel = it.type === 'weapon' ? (mage ? 'Powers your magic bolts.' : ranger ? 'Powers your arrows.' : weaponFeelText(it.icon)) : '';
-    return `<div class="item-head"><img class="pix ${big ? 'big' : ''}" src="${DF.bigPicture('item', it, big ? 8 : 6)}" alt="" style="--r:${DF.RAR_COLOR[it.rarity]}">
+    // Name and story on the left; stats and powers on the right when there's room (they drop below on a phone).
+    return `<div class="item-wrap"><div class="item-main"><div class="item-head"><img class="pix ${big ? 'big' : ''}" src="${DF.bigPicture('item', it, big ? 8 : 6)}" alt="" style="--r:${DF.RAR_COLOR[it.rarity]}">
       <div><h2 style="color:${DF.RAR_COLOR[it.rarity]}">${esc(it.name)}</h2><p class="sub">${esc(itemTitle(it))}</p></div></div>
       <p class="desc">${esc(it.description)}</p>
-      <ul class="stats">${statLines(it).map((s) => `<li>${s}</li>`).join('')}${feel ? `<li class="feel">${feel}</li>` : ''}</ul>
-      ${pw ? `<ul class="powers">${pw}</ul>` : ''}
-      ${it.from ? `<p class="from">Forged from ${esc(it.from[0])} and ${esc(it.from[1])}</p>` : ''}`;
+      ${it.from ? `<p class="from">Forged from ${esc(it.from[0])} and ${esc(it.from[1])}</p>` : ''}</div>
+      <div class="item-side"><ul class="stats">${statLines(it).map((s) => `<li>${s}</li>`).join('')}${feel ? `<li class="feel">${feel}</li>` : ''}</ul>
+      ${pw ? `<ul class="powers">${pw}</ul>` : ''}</div></div>`;
   }
   /* ---------- Comparing a find with what you're wearing ---------- */
   const CMP_STATS = ['attack', 'defence', 'health', 'speed', 'luck'];

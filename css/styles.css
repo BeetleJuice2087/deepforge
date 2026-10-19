@@ -461,3 +461,10 @@ body.touch .inv-foot .keyhint { display: none; }
 .ev-row strong { color: var(--bone, #e8dcc0); }
 .ev-result { margin: 10px 0 4px; padding: 10px 12px; background: #120e16; box-shadow: inset 0 0 0 1px #3a2e48; line-height: 1.45; }
 .ev-grid { grid-template-columns: repeat(3, 1fr); }
+/* Item details: story on the left, stats and powers on the right when the panel is wide enough */
+.item-wrap { display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: flex-start; }
+.item-main { flex: 1 1 260px; min-width: 0; }
+.item-side { flex: 1 1 220px; min-width: 0; }
+.item-wrap .item-side { padding: 10px 12px; background: #120e16; box-shadow: inset 0 0 0 1px #2e2638; margin-top: 2px; }
+.item-side .stats { flex-direction: column; gap: 3px; margin: 0; }
+.item-side .powers { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid #2e2638; }
