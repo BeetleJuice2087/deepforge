@@ -1834,6 +1834,7 @@
       const paused = hold.size > 0;
       if (!paused && run && !P.dead) { meta.stats.playSecs += dt; run.playSecs = (run.playSecs || 0) + dt; }
       if (fx.stopCd > 0) fx.stopCd -= dt;
+      hudCooldowns();
       if (fx.hitstop > 0) { fx.hitstop -= dt; dt = 0; }
       if (fx.slowmo > 0) { fx.slowmo -= dt; dt *= 0.35; }
       if (!paused && !fx.fadeDir && dt > 0) {
@@ -2438,6 +2439,22 @@
   }
 
   /* ================= HUD ================= */
+  // The weapon and off-hand slots fill back up like a clock while they recharge, and flash when ready.
+  const cdHud = { atkMax: 0.3, lastAtk: 0, lastAlt: 0, w: null, o: null };
+  function hudCooldowns() {
+    if (!run) return;
+    if (!cdHud.w || !cdHud.w.isConnected) { cdHud.w = document.querySelector('#slots [data-eq="weapon"]'); cdHud.o = document.querySelector('#slots [data-eq="offhand"]'); }
+    const w = cdHud.w, o = cdHud.o; if (!w || !o) return;
+    if (P.cd > cdHud.lastAtk + 0.01) cdHud.atkMax = P.cd; // a new swing started
+    const altMax = classUI().altCd || 2;
+    const fa = P.cd > 0 ? Math.min(1, P.cd / cdHud.atkMax) : 0, fo = P.bashCd > 0 ? Math.min(1, P.bashCd / altMax) : 0;
+    w.style.setProperty('--cd', fa.toFixed(3)); o.style.setProperty('--cd', fo.toFixed(3));
+    w.classList.toggle('cooling', fa > 0); o.classList.toggle('cooling', fo > 0);
+    const left = P.bashCd > 1 ? String(Math.ceil(P.bashCd)) : '';
+    if (o.dataset.left !== left) o.dataset.left = left;
+    if (cdHud.lastAlt > 0 && P.bashCd <= 0) { o.classList.remove('ready'); void o.offsetWidth; o.classList.add('ready'); }
+    cdHud.lastAtk = P.cd; cdHud.lastAlt = P.bashCd;
+  }
   let hudKey = '';
   function updateHUD(force) {
     if (!run) return;
