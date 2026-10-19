@@ -2446,14 +2446,18 @@
     if (!cdHud.w || !cdHud.w.isConnected) { cdHud.w = document.querySelector('#slots [data-eq="weapon"]'); cdHud.o = document.querySelector('#slots [data-eq="offhand"]'); }
     const w = cdHud.w, o = cdHud.o; if (!w || !o) return;
     if (P.cd > cdHud.lastAtk + 0.01) cdHud.atkMax = P.cd; // a new swing started
-    const altMax = classUI().altCd || 2;
-    const fa = P.cd > 0 ? Math.min(1, P.cd / cdHud.atkMax) : 0, fo = P.bashCd > 0 ? Math.min(1, P.bashCd / altMax) : 0;
+    // The off-hand slot tracks your special shot (volley, nova, bomb). The knight has none, so his shows the bash.
+    const cu = classUI();
+    let sp = P.bashCd, spMax = cu.altCd || 2;
+    if (cu.skillCd) { sp = P.novaCd || 0; spMax = cu.skillCd; }
+    else if (run.cls === 'mage') { const short = Math.max(0, 25 - (P.mana || 0)) / 7; sp = Math.max(P.novaCd || 0, short); spMax = Math.max(0.6, 25 / 7); }
+    const fa = P.cd > 0 ? Math.min(1, P.cd / cdHud.atkMax) : 0, fo = sp > 0 ? Math.min(1, sp / spMax) : 0;
     w.style.setProperty('--cd', fa.toFixed(3)); o.style.setProperty('--cd', fo.toFixed(3));
     w.classList.toggle('cooling', fa > 0); o.classList.toggle('cooling', fo > 0);
-    const left = P.bashCd > 1 ? String(Math.ceil(P.bashCd)) : '';
+    const left = sp > 1 ? String(Math.ceil(sp)) : '';
     if (o.dataset.left !== left) o.dataset.left = left;
-    if (cdHud.lastAlt > 0 && P.bashCd <= 0) { o.classList.remove('ready'); void o.offsetWidth; o.classList.add('ready'); }
-    cdHud.lastAtk = P.cd; cdHud.lastAlt = P.bashCd;
+    if (cdHud.lastAlt > 0 && sp <= 0) { o.classList.remove('ready'); void o.offsetWidth; o.classList.add('ready'); }
+    cdHud.lastAtk = P.cd; cdHud.lastAlt = sp;
   }
   let hudKey = '';
   function updateHUD(force) {
