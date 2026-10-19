@@ -834,6 +834,8 @@
         <label class="range">Music volume <input type="range" id="s-mvol" min="0" max="1" step="0.05" value="${SND.mvol}"></label>
         <div class="seg">${[['tracks', 'Soundtrack'], ['synth', 'Made on the spot']].map(([v, l]) => `<label><input type="radio" name="m-kind" value="${v}" ${SND.kind === v ? 'checked' : ''}> ${l}</label>`).join('')}</div>
         <details><summary>Music credits</summary><ul class="credits">${DF.MUSIC_CREDITS.map((c) => `<li><small>${esc(c.use)}</small><b>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a>` : esc(c.title)}</b>${c.by ? ` by ${esc(c.by)}` : ''}${c.license ? ` <em>${esc(c.license)}</em>` : ''}</li>`).join('')}</ul><p class="note">Tracks were converted to MP3 and their volumes evened out for the game. Licences: <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC-BY 4.0</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC-BY-SA 4.0</a>, <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a>.</p></details></section>
+      <section class="set"><h3>Screen</h3>
+        <label class="sw"><input type="checkbox" id="s-nums" ${G.view.dmgNums ? 'checked' : ''}> Damage numbers</label></section>
       <section class="set"><h3>The Deep (AI)</h3>
         <p class="note">It invents each floor, its monsters, the treasure and everything you forge. When it's off or can't answer in time, the game makes up floors itself, so there's always something new.</p>
         <div class="seg">${[['cloud', 'Online'], ['device', 'On this device'], ['off', 'Off']].map(([v, l]) => `<label><input type="radio" name="ai-mode" value="${v}" ${st.mode === v ? 'checked' : ''} ${v === 'device' && !AI.hasGPU() ? 'disabled' : ''}> ${l}</label>`).join('')}</div>
@@ -858,6 +860,7 @@
     }
     function bind() {
       $('#s-on').onchange = (e) => { SND.set(e.target.checked, SND.vol); };
+      $('#s-nums').onchange = (e) => { G.setView('dmgNums', e.target.checked); };
       $('#s-mu').onchange = (e) => { SND.set(SND.on, SND.vol, e.target.checked); };
       $('#s-mvol').oninput = (e) => { SND.set(SND.on, SND.vol, null, +e.target.value); };
       $('#s-vol').oninput = (e) => { SND.set(SND.on, +e.target.value); };

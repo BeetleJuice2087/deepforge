@@ -393,7 +393,11 @@
   let run = null, floor = null, room = null;
   const P = { x: 60, y: 44, vx: 0, vy: 0, r: 2.5, fx: 1, fy: 0, dir: 1, hp: 30, inv: 0, cd: 0, bashCd: 0, swing: null, bash: null, poison: 0, poisonTick: 0,
     walkT: 0, hazT: 0, springT: 0, slowT: 0, flash: 0, dead: false, spellCd: 0, ward: 0, roll: null, turrets: [], burnT: 0, burnTick: 0, rootT: 0, curseT: 0 };
-  const fx = { particles: [], texts: [], projectiles: [], shake: 0, fade: 0, fadeDir: 0, fadeCb: null, hitstop: 0, slowmo: 0 };
+  const fx = { particles: [], texts: [], projectiles: [], shake: 0, fade: 0, fadeDir: 0, fadeCb: null, hitstop: 0, stopCd: 0, slowmo: 0 };
+  // Display options kept on this device.
+  const VIEW_KEY = 'deepforge.view';
+  const view = Object.assign({ dmgNums: true }, (() => { try { return JSON.parse(localStorage.getItem(VIEW_KEY)) || {}; } catch (e) { return {}; } })());
+  function setView(k, v) { view[k] = v; try { localStorage.setItem(VIEW_KEY, JSON.stringify(view)); } catch (e) { /* private mode */ } }
   const hold = new Set(); // reasons the game is paused (menus, cards, the forge)
   let action = null; // the context button: open a chest, forge, descend
   const input = { mx: 0, my: 0, attack: false, bash: false, spell: false, spell2: false, act: false, keys: new Set() };
@@ -1462,11 +1466,11 @@
       if (!big || d > big.n) meta.records.bigHit = { n: d, weapon: run.eq.weapon ? run.eq.weapon.name : 'bare hands', monster: e.spec.name, floor: run.floorN };
     }
     e.hp -= d; e.flash = 0.1;
-    floatText(e.x + (rnd() - 0.5) * 4, e.y - e.h / 2 - 2, crit ? d + '!' : d, o.dot ? '#ffb070' : crit ? '#ffcf4a' : tag ? '#ffe14a' : '#ffffff', crit || !!tag);
-    if (tag) { floatText(e.x, e.y - e.h / 2 - 9, tag, '#ffe14a'); SND.weak(e.x / LW); }
+    if (view.dmgNums) floatText(e.x + (rnd() - 0.5) * 4, e.y - e.h / 2 - 2, crit ? d + '!' : d, o.dot ? '#ffb070' : crit ? '#ffcf4a' : tag ? '#ffe14a' : '#ffffff', crit || !!tag);
+    if (tag) { if (view.dmgNums) floatText(e.x, e.y - e.h / 2 - 9, tag, '#ffe14a'); SND.weak(e.x / LW); }
     if (!o.dot) {
       SND.hit(e.x / LW, d > 12);
-      fx.hitstop = Math.max(fx.hitstop, crit ? 0.07 : 0.035);
+      if (!o.noStop && fx.stopCd <= 0) { fx.hitstop = Math.max(fx.hitstop, crit ? 0.07 : 0.035); fx.stopCd = 0.15; }
       if (crit) { fx.shake = Math.max(fx.shake, 0.22); burst(e.x, e.y - 3, '#ffcf4a', 6, 45, true); } // crits land with a little kick
       burst(e.x, e.y - 2, (e.spec.colors && e.spec.colors[0]) || '#fff', 4, 35);
     }
@@ -1784,9 +1788,9 @@
       if (p.mine) {
         for (const e of room.enemies) {
           if (p.hit.has(e) || e.hidden || e.spawnT > 0 || Math.hypot(e.x - p.x, e.y - 2 - p.y) > e.r + p.r) continue;
-          p.hit.add(e);
-          const w = run.eq.weapon;
-          damageEnemy(e, stats().attack * p.dmg, p.spellEl ? { from: p, knock: 30, element: p.spellEl, luck: stats().luckF } : { from: p, knock: 30, powers: (w ? w.powers : []).filter((x) => x !== 'multishot'), element: w ? w.element : 'none', luck: stats().luckF });
+          const first = p.hit.size === 0; p.hit.add(e);
+          const w = run.eq.weapon, st = stats();
+          damageEnemy(e, st.attack * p.dmg, p.spellEl ? { from: p, knock: 30, element: p.spellEl, luck: st.luckF, noStop: !first } : { from: p, knock: 30, powers: (w ? w.powers : []).filter((x) => x !== 'multishot'), element: w ? w.element : 'none', luck: st.luckF, noStop: !first });
           if (!p.pierce) { p.dead = true; break; }
         }
       } else if (Math.hypot(P.x - p.x, P.y - 2 - p.y) < P.r + p.r) {
@@ -1829,6 +1833,7 @@
       readKeys();
       const paused = hold.size > 0;
       if (!paused && run && !P.dead) { meta.stats.playSecs += dt; run.playSecs = (run.playSecs || 0) + dt; }
+      if (fx.stopCd > 0) fx.stopCd -= dt;
       if (fx.hitstop > 0) { fx.hitstop -= dt; dt = 0; }
       if (fx.slowmo > 0) { fx.slowmo -= dt; dt *= 0.35; }
       if (!paused && !fx.fadeDir && dt > 0) {
@@ -2698,7 +2703,7 @@
   });
   Object.assign(G, {
     saveMeta, UPGRADES, buyUpgrade, buyStall, eventDo, eventPicture, EVENT_INFO, sellPrice, sellItem, slotFor, slotKind, itemScore, bagSize, moveItem, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
-    prepareNextRun, resize, updateHUD, drawMinimap,
+    prepareNextRun, resize, updateHUD, drawMinimap, view, setView,
     resetAll() { localStorage.removeItem(META_KEY); meta = defaultMeta(); saveMeta(true); },
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },
   });
