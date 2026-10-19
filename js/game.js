@@ -730,14 +730,14 @@
       e.abil.delete('mutates'); const r = DF.seeded(spec.name + '#' + run.floorN), pool = DF.ABILITIES.filter((x) => !['mutates', 'splits when hit'].includes(x));
       for (let k = 0; k < 2; k++) e.abil.add(pool[r(pool.length)]);
     }
-    const hpBase = [10, 18, 30][tier - 1] * (1 + 0.35 * (n - 1));
+    const hpBase = [10, 18, 30][tier - 1] * (1 + 0.42 * (n - 1));
     let hp = hpBase, dmg = [3, 4, 6][tier - 1] * (1 + 0.2 * (n - 1)), spd = [27, 24, 20][tier - 1];
     if (e.beh === 'swarm') { hp *= 0.45; dmg *= 0.7; spd = 32; }
     if (e.beh === 'tank') { hp *= 2; spd = 13; }
     if (e.beh === 'shooter' || e.beh === 'summoner') spd = 20;
     if (e.beh === 'ambusher') { e.hidden = true; }
     if (o.elite) { hp *= 2.5; dmg *= 1.3; const extra = DF.ABILITIES.filter((a) => !e.abil.has(a) && !['splits when hit', 'mutates'].includes(a)); e.abil.add(pick(extra)); }
-    if (o.boss) { hp = 90 * (1 + 0.42 * (n - 1)) * (spec.named ? 1.3 : 1); dmg = 6 * (1 + 0.2 * (n - 1)); spd = e.beh === 'tank' ? 15 : 19; e.r = Math.max(e.r, 5); }
+    if (o.boss) { hp = 90 * (1 + 0.48 * (n - 1)) * (spec.named ? 1.3 : 1); dmg = 6 * (1 + 0.2 * (n - 1)); spd = e.beh === 'tank' ? 15 : 19; e.r = Math.max(e.r, 5); }
     // Past floor 10 monsters toughen faster: +6% health and +9% damage per floor, compounding.
     const past = Math.max(0, n - 10);
     if (past) { hp *= Math.pow(1.06, past); dmg *= Math.pow(1.09, past); }
@@ -840,7 +840,8 @@
     const s = stats();
     const foe = src && (src.abil ? src : src.owner && src.owner.abil ? src.owner : null);
     if (foe && foe.abil.has('pack hunter')) { const pack = room.enemies.filter((x) => x !== foe && !x.dead && x.spec.name === foe.spec.name && dist(x, foe) < 50).length; dmg *= 1 + 0.25 * pack; }
-    const d = Math.max(1, Math.round(dmg * 12 / (12 + s.defence)));
+    // Defence softens hits with diminishing returns, so a full set of 8 armour pieces helps without making you untouchable.
+    const d = Math.max(1, Math.round(dmg * 18 / (18 + s.defence * 0.55)));
     P.hp -= d; P.inv = 0.8; P.flash = 0.15; fx.shake = Math.max(fx.shake, 0.25); fx.hitstop = 0.05;
     bump('dmgTaken', d);
     P.lastHit = (src && src.spec && src.spec.name) || (src && src.from) || (kind === 'hazard' ? 'Hazard pools' : 'The floor itself');
@@ -1312,6 +1313,7 @@
     if (!o.dot) {
       SND.hit(e.x / LW, d > 12);
       fx.hitstop = Math.max(fx.hitstop, crit ? 0.07 : 0.035);
+      if (crit) { fx.shake = Math.max(fx.shake, 0.22); burst(e.x, e.y - 3, '#ffcf4a', 6, 45, true); } // crits land with a little kick
       burst(e.x, e.y - 2, (e.spec.colors && e.spec.colors[0]) || '#fff', 4, 35);
     }
     const powers = o.powers || [];
