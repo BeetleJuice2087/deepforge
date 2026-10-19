@@ -279,6 +279,8 @@
     const mid = byFar.filter((r) => distTo.get(r) >= 2);
     if (rnd() < 0.75) { const sh = take(ends.slice(1)) || take(mid.slice().reverse()); if (sh) sh.type = 'shop'; }
     if (n >= 2 && rnd() < 0.65) { const cf = take(mid.slice(Math.floor(mid.length / 3))) || take(mid); if (cf) cf.type = 'camp'; }
+    // A strange room on most floors: a shrine, a cursed chest, a traveller, a well or an old armoury.
+    if (rnd() < (n >= 2 ? 0.7 : 0.4)) { const ev = take(mid.slice().reverse()) || take(mid); if (ev) ev.type = 'event'; }
     rooms.forEach((r) => { r.dist = distTo.get(r); });
     return { rooms, start, cells, get: (x, y) => cells.get(key(x, y)) };
   }
@@ -289,7 +291,7 @@
     const rule = theme.rule;
     let layout = room.type === 'start' || room.type === 'boss' ? DF.ROOMS[0] : pick(DF.ROOMS);
     if (room.type === 'boss') layout = pick([DF.ROOMS[0], DF.ROOMS[1], DF.ROOMS[9]]);
-    if (room.type === 'treasure' || room.type === 'forge' || room.type === 'shop' || room.type === 'camp') layout = pick([DF.ROOMS[0], DF.ROOMS[1], DF.ROOMS[3], DF.ROOMS[5]]);
+    if (room.type === 'treasure' || room.type === 'forge' || room.type === 'shop' || room.type === 'camp' || room.type === 'event') layout = pick([DF.ROOMS[0], DF.ROOMS[1], DF.ROOMS[3], DF.ROOMS[5]]);
     const flipX = rnd() < 0.5, flipY = rnd() < 0.5;
     for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
       if (x === 0 || y === 0 || x === RW - 1 || y === RH - 1) { t[y * RW + x] = TL.WALL; continue; }
@@ -433,6 +435,7 @@
       if (st.health) s.maxHp += st.health; if (st.attack) s.attack += st.attack; if (st.defence) s.defence += st.defence;
       if (st.speed) s.speed += st.speed; if (st.luck) s.luck += st.luck;
     }
+    if (run && run.bless) { s.attack += run.bless.atk || 0; s.defence += run.bless.def || 0; s.luck += run.bless.luck || 0; }
     s.speed = Math.min(s.speed, 70);
     s.luckF = Math.min(0.6, s.luck / 100);
     if (P.curseT > 0) s.attack = Math.max(1, Math.round(s.attack * 0.7)); // a mummy's curse
@@ -451,7 +454,7 @@
       const s = meta.run;
       run = { floorN: s.floorN, content: s.content, next: newContent(s.floorN + 1), eq: fixEq(s.eq), bag: (s.bag || []).slice(), potions: s.potions, kills: s.kills || 0, gold: s.gold || 0,
         forged: s.forged || 0, usedFallbacks: s.usedFallbacks || [], startedAt: s.startedAt || Date.now(), floorKills: s.floorKills || 0, rerolled: s.rerolled || 0, playSecs: s.playSecs || 0,
-        cls: DF.CLASSES[s.cls] ? s.cls : 'knight', spell2: s.spell2 && DF.SPELLS[s.spell2.id] ? s.spell2 : null };
+        cls: DF.CLASSES[s.cls] ? s.cls : 'knight', spell2: s.spell2 && DF.SPELLS[s.spell2.id] ? s.spell2 : null, bless: s.bless || { atk: 0, def: 0, luck: 0 }, lastEvent: s.lastEvent || '' };
       freeSlot(); // an older, smaller bag grows to today's size
       run.next.prio = 2; dream(run.next);
       enterFloor(s.hp, s.floor);
@@ -464,7 +467,7 @@
     cls = DF.CLASSES[cls] ? cls : 'knight'; meta.lastCls = cls;
     const kit = DF.STARTERS[cls];
     run = { floorN: 1, content: null, next: null, cls, eq: fixEq({ weapon: makeItem(kit.weapon, 0, 0, cls), armour: makeItem(kit.armour, 0, 0, cls) }),
-      bag: Array(bagSize()).fill(null), potions: 1 + st0.satchel, kills: 0, gold: 0, forged: 0, usedFallbacks: [], startedAt: Date.now() };
+      bag: Array(bagSize()).fill(null), potions: 1 + st0.satchel, kills: 0, gold: 0, forged: 0, usedFallbacks: [], startedAt: Date.now(), bless: { atk: 0, def: 0, luck: 0 }, lastEvent: '' };
     // Give the AI a few seconds to finish floor 1, but never make you wait long.
     if (AI.ready() && !contentReady(c) && (AI.settings.mode === 'cloud' || AI.local.engine)) {
       const ok = await DF.UI.waitForDream(() => contentReady(c), 9000);
@@ -485,7 +488,7 @@
       rooms: floor.rooms.map((r) => ({
         gx: r.gx, gy: r.gy, type: r.type, doors: r.doors, visited: r.visited, seen: r.seen, cleared: r.cleared, dist: r.dist,
         tiles: r.tiles ? Array.from(r.tiles) : null, torches: r.torches, springLeft: r.springLeft,
-        chest: r.chest || null, altar: r.altar || null, stairs: r.stairs || null, shop: r.shop || null, fire: r.fire || null, props: r.props || [],
+        chest: r.chest || null, altar: r.altar || null, stairs: r.stairs || null, shop: r.shop || null, fire: r.fire || null, event: r.event || null, props: r.props || [],
         pickups: r.pickups.map((p) => ({ kind: p.kind, x: p.x, y: p.y, value: p.value, item: p.item, spell: p.spell, charges: p.charges })),
         enemies: r.enemies.filter((e) => !e.dead).map((e) => ({ spec: e.spec, x: e.x, y: e.y, hp: e.hp, elite: e.elite, boss: e.boss, child: e.child, minion: e.minion, hidden: e.hidden, mimicItem: e.mimicItem || null })),
       })),
@@ -494,7 +497,7 @@
   function snapshotRun() {
     if (!run || P.dead || !floor || G.mode !== 'play') return;
     meta.run = { floorN: run.floorN, content: run.content, eq: run.eq, bag: run.bag, potions: run.potions, hp: Math.max(1, Math.round(P.hp)), kills: run.kills,
-      gold: run.gold, forged: run.forged, usedFallbacks: run.usedFallbacks, startedAt: run.startedAt, floorKills: run.floorKills || 0, rerolled: run.rerolled || 0, playSecs: run.playSecs || 0, cls: run.cls, spell2: run.spell2 || null, floor: snapFloor() };
+      gold: run.gold, forged: run.forged, usedFallbacks: run.usedFallbacks, startedAt: run.startedAt, floorKills: run.floorKills || 0, rerolled: run.rerolled || 0, playSecs: run.playSecs || 0, cls: run.cls, spell2: run.spell2 || null, bless: run.bless, lastEvent: run.lastEvent || '', floor: snapFloor() };
   }
   function saveRun() {
     if (!run || P.dead) return;
@@ -571,7 +574,7 @@
     if (secs > (rec.longestRun || 0)) rec.longestRun = secs;
   }
   /* ---- Rerolling a floor: swap a bad floor for a new one, for gold, before you've taken anything from it ---- */
-  const roomTouched = (r) => r.cleared || (r.chest && r.chest.open) || (r.altar && r.altar.uses < 2) || r.stairs || (r.shop && r.shop.stalls.some((x) => x.sold)) || (r.fire && r.fire.used);
+  const roomTouched = (r) => r.cleared || (r.chest && r.chest.open) || (r.altar && r.altar.uses < 2) || r.stairs || (r.shop && r.shop.stalls.some((x) => x.sold)) || (r.fire && r.fire.used) || (r.event && r.event.touched);
   const rerollCost = () => (run ? 30 * run.floorN : 0);
   function rerollBlock() {
     if (!run || !floor) return 'There\u2019s no floor to reroll.';
@@ -656,6 +659,7 @@
       if (r.type === 'forge') r.altar = { x: 7 * T + 4, y: 5 * T + 4, uses: 2 };
       if (r.type === 'shop') { r.shop = makeShop(); if (!meta.tips.shop) { meta.tips.shop = 1; saveMeta(); DF.UI.toast('A merchant! Walk up to a stall to buy. Gold spent here is gold you won\u2019t have for camp upgrades.', 5000); } }
       if (r.type === 'camp') { r.fire = { x: 7 * T + 4, y: 5 * T + 4, used: false }; if (!meta.tips.camp) { meta.tips.camp = 1; saveMeta(); DF.UI.toast('A campfire. Rest here once to heal half your health and shake off poison.', 4500); } }
+      if (r.type === 'event') r.event = makeEvent();
       if (r.type === 'start' && run.floorN === 1 && !meta.tips.move) { meta.tips.move = 1; saveMeta(); DF.UI.toast(DF.UI.isTouch() ? 'Left thumb moves, right thumb swings. Clear rooms, find the forge, beat the boss.' : 'WASD or arrows to move, J or Space to swing, K or Shift to shield-bash.', 6000); }
     }
     r.locked = r.enemies.length > 0;
@@ -1116,6 +1120,155 @@
     DF.UI.toast('You rest by the fire for a while. The flames burn down to embers.');
     updateHUD(true); saveRun(); drawMinimap();
   }
+
+  /* ---- Room events: a shrine, a cursed chest, a traveller, a wishing well, a forgotten armoury ---- */
+  const EVENT_INFO = {
+    shrine: { name: 'Blood Shrine', verb: 'Pray' },
+    cursed: { name: 'Cursed Chest', verb: 'Open' },
+    traveller: { name: 'Wounded Traveller', verb: 'Talk' },
+    well: { name: 'Wishing Well', verb: 'Make a wish' },
+    armoury: { name: 'Forgotten Armoury', verb: 'Look' },
+  };
+  const BLESS = { atk: { add: 2, word: 'attack' }, def: { add: 2, word: 'defence' }, luck: { add: 6, word: 'luck' } };
+  function makeEvent() {
+    const n = run.floorN, kinds = Object.keys(EVENT_INFO).filter((k) => k !== run.lastEvent);
+    const kind = pick(kinds); run.lastEvent = kind;
+    const ev = { kind, x: 7 * T + 4, y: 5 * T + 4, used: false };
+    if (kind === 'shrine') ev.cost = 0.25;
+    if (kind === 'traveller') ev.reward = 15 + n * 6;
+    if (kind === 'well') { ev.cost = 8 + n * 3; ev.wishes = 3; }
+    if (kind === 'armoury') { // three different kinds of thing, at least uncommon
+      const luck = stats().luckF, seen = new Set(); ev.items = [];
+      for (let tries = 0; ev.items.length < 3 && tries < 30; tries++) {
+        const sp = lootSpec(), k = sp.type === 'weapon' ? 'weapon' : sp.type === 'trinket' ? 'trinket' : (DF.ARMOUR_SLOT[sp.icon] || 'body');
+        if (seen.has(k) && tries < 24) continue; seen.add(k);
+        ev.items.push(makeItem(sp, rollRarity(n, luck, 1), n));
+      }
+    }
+    return ev;
+  }
+  function giveItem(it, x, y) {
+    const slot = freeSlot();
+    if (slot >= 0) { run.bag[slot] = it; recordItem(it); return true; }
+    room.pickups.push({ kind: 'item', item: it, x, y, t: -1 }); return false;
+  }
+  // Does what you chose. Returns { ok, text } for the sheet to show.
+  function eventDo(ev, choice) {
+    if (!ev || ev.used) return { ok: false, text: 'Nothing more happens here.' };
+    const n = run.floorN, s = stats();
+    if (ev.kind === 'shrine') {
+      const b = BLESS[choice]; if (!b) return { ok: false };
+      const cost = Math.round(s.maxHp * ev.cost);
+      if (P.hp <= cost) return { ok: false, text: 'You’re too hurt. The shrine would take more than you have.' };
+      P.hp -= cost; ev.used = ev.touched = true; bump('blessings');
+      run.bless[choice] = (run.bless[choice] || 0) + b.add;
+      floatText(P.x, P.y - 8, '-' + cost, '#ff4a5a'); fx.shake = Math.max(fx.shake, 0.2);
+      for (let k = 0; k < 20; k++) burst(ev.x, ev.y - 6, k % 2 ? '#ff4a5a' : '#ffe9a8', 1, 34, true);
+      SND.heart(); updateHUD(true); saveRun(); drawMinimap();
+      return { ok: true, text: `The blood runs into the stone. <b>+${b.add} ${b.word}</b> for the rest of this run.` };
+    }
+    if (ev.kind === 'cursed') {
+      if (choice !== 'open') return { ok: false };
+      ev.used = ev.touched = true;
+      ev.pending = makeItem(lootSpec(), rollRarity(n, s.luckF, 2), n);
+      const mons = run.content.monsters.filter((m) => m.behaviour !== 'swarm');
+      const pool = (mons.length ? mons : run.content.monsters).slice().sort((a, b) => (b.tier || 2) - (a.tier || 2));
+      const spots = freeSpots(room, null, 0).filter(([x, y]) => Math.hypot(x - P.x, y - P.y) > 28 && Math.hypot(x - ev.x, y - ev.y) > 12);
+      for (let k = 0; k < 2; k++) {
+        const [x, y] = spots.length ? spots.splice(rint(spots.length), 1)[0] : [ev.x + (k ? 20 : -20), ev.y];
+        const e = makeEnemy(pool[Math.min(k, pool.length - 1)] || pool[0], x, y, { elite: true }); e.spawnT = 0.7;
+        room.enemies.push(e); recordMonster(e.spec);
+        for (let j = 0; j < 10; j++) burst(x, y - 3, '#b48bff', 1, 30, true);
+      }
+      room.locked = true; room.cleared = false;
+      SND.door(); SND.bossRoar(); fx.shake = Math.max(fx.shake, 0.35);
+      floatText(ev.x, ev.y - 14, 'Ambush!', '#ff5a5a', true);
+      saveRun(); drawMinimap();
+      return { ok: true, text: 'The lock clicks open and the shadows stand up. Beat them and the treasure is yours.' };
+    }
+    if (ev.kind === 'traveller') {
+      if (choice !== 'give') return { ok: false };
+      if (run.potions < 1) return { ok: false, text: 'You have no potion to give.' };
+      run.potions--; ev.used = ev.touched = true; bump('helped');
+      meta.gold += ev.reward; SND.coin(ev.x / LW);
+      const it = makeItem(lootSpec(), rollRarity(n, s.luckF, 1), n);
+      const inBag = giveItem(it, ev.x, ev.y + 10);
+      burst(ev.x, ev.y - 4, '#72e07e', 14, 30, true);
+      updateHUD(true); saveMeta(true); drawMinimap();
+      return { ok: true, item: it, text: `“Bless you.” He presses <b style="color:#ffcf4a">${ev.reward} gold</b> and <b style="color:${DF.RAR_COLOR[it.rarity]}">${DF.UI.esc(it.name)}</b> into your hands${inBag ? '' : ', but your bag is full, so it’s on the floor'}.` };
+    }
+    if (ev.kind === 'well') {
+      if (choice !== 'wish') return { ok: false };
+      if (meta.gold < ev.cost) return { ok: false, text: `You need ${ev.cost - meta.gold} more gold.` };
+      meta.gold -= ev.cost; ev.touched = true; ev.wishes--; SND.coin(ev.x / LW);
+      ev.cost = Math.round(ev.cost * 1.6);
+      if (ev.wishes <= 0) ev.used = true;
+      for (let k = 0; k < 12; k++) burst(ev.x, ev.y - 4, k % 2 ? '#9ad8ff' : '#3a6ab8', 1, 28, true);
+      const r = rnd(); let text;
+      if (r < 0.28 && P.hp < s.maxHp) { healPlayer(s.maxHp); P.poison = 0; SND.heal(P.x / LW); text = 'The water glows. Every wound closes. <b>Fully healed.</b>'; }
+      else if (r < 0.5) { run.potions++; SND.heart(); text = 'Something bobs up: <b style="color:#ff6a8a">a healing potion</b>.'; }
+      else if (r < 0.7) {
+        const sp = run.content.loot.filter((x) => x.type === 'trinket'), it = makeItem(sp.length ? pick(sp) : lootSpec(), rollRarity(n, s.luckF, 1), n);
+        const inBag = giveItem(it, ev.x, ev.y + 10); SND.chest();
+        text = `A glint at the bottom. You fish out <b style="color:${DF.RAR_COLOR[it.rarity]}">${DF.UI.esc(it.name)}</b>${inBag ? '' : ' (it’s on the floor, your bag is full)'}.`;
+      } else if (r < 0.8) { const back = ev.cost * 2; meta.gold += back; text = `The well coughs your coin back up, and friends with it. <b style="color:#ffcf4a">+${back} gold</b>.`; }
+      else text = 'Plip. A splash, and nothing more.';
+      updateHUD(true); saveMeta(true); drawMinimap();
+      return { ok: true, text: text + (ev.used ? ' The water goes still for good.' : '') };
+    }
+    if (ev.kind === 'armoury') {
+      const it = ev.items && ev.items[+choice]; if (!it) return { ok: false };
+      ev.used = ev.touched = true; ev.taken = +choice;
+      const inBag = giveItem(it, ev.x, ev.y + 10); SND.pickup();
+      for (let k = 0; k < 16; k++) burst(ev.x + (rnd() - 0.5) * 14, ev.y - 6, '#8a7a6a', 1, 20);
+      saveRun(); updateHUD(true); drawMinimap();
+      return { ok: true, text: `You take <b style="color:${DF.RAR_COLOR[it.rarity]}">${DF.UI.esc(it.name)}</b>${inBag ? '' : ' (on the floor, your bag is full)'}. The rest crumbles to rust and dust.` };
+    }
+    return { ok: false };
+  }
+  // The event props, drawn from small letter grids and kept as canvases.
+  const EV_SPR = {"shrine":{"rows":["...y......y...","...o......o...","...w..rr..w...","...w.rRRr.w...",".ssssrRRrssss.",".sSSSSSSSSSSs.","..sddddddddS..","..sdSSSSSSdS..","..sdSrrrrSdS..","..sdSSSSSSdS..","..sddddddddS..",".ssssssssssss.",".dddddddddddd."],"pal":{"y":"#ffe9a8","o":"#ff9a3a","w":"#e8dcc0","r":"#c42a3a","R":"#ff4a5a","s":"#6a6478","S":"#8a849a","d":"#3a3446"}},"chest":{"rows":["..............","...pppppppp...","..pPPPPPPPPp..",".pPPgPPPPgPPp.",".pkkkkkkkkkkp.",".pPPPPyyPPPPp.",".pPPPPyYPPPPp.",".pPPPPPPPPPPp.",".pkkkkkkkkkkp.",".pPPPPPPPPPPp.",".pppppppppppp.","..g........g.."],"pal":{"p":"#3a1e4a","P":"#6a3a8a","k":"#9a8aa8","y":"#c8a040","Y":"#ffe14a","g":"#b48bff"}},"traveller":{"rows":["..............","....hhhh......","...hhhhhh.....","...hFFFFh.....","...hFeFeh.....","...hFFFFh..b..","..cccccccc.b..",".ccCCwwCCcc...",".cCCCwrCCCc...",".cCCCCCCCCcL..","..cccccccLLL..",".LLLLLLLLLLL.."],"pal":{"h":"#5a4a3a","F":"#e8c8a0","e":"#3a2a2a","c":"#4a5a3a","C":"#6a7a4a","w":"#f0e8e0","r":"#c42a3a","b":"#8a6a3a","L":"#7a5a3a"}},"well":{"rows":["..rrrrrrrrrr..",".rRRRRRRRRRRr.","..b........b..","..b...cc...b..","..b...c....b..",".ssssssssssss.",".sSSSSSSSSSSs.",".sbBBBWBBBBbs.",".sSBBBBBWBBSs.",".sSSSSSSSSSSs.",".sdSdSdSdSdSs.",".ssssssssssss."],"pal":{"r":"#6a2a2a","R":"#9a3a3a","b":"#7a5a3a","c":"#9a9aa8","s":"#5a5468","S":"#7a7488","d":"#3a3446","B":"#3a6ab8","W":"#9ad8ff"}},"armoury":{"rows":[".bbbbbbbbbbbb.",".b..........b.",".b.k...k...kb.",".b.k..kkk..kb.",".b.k...k..kkb.",".b.k...k...kb.",".b.k...k...kb.",".bbbbbbbbbbbb.",".b..........b.",".bBBBBBBBBBBb.",".b..........b.",".b..........b."],"pal":{"b":"#7a5a3a","B":"#5a3e28","k":"#c8ccd8"}}};
+  const evCache = {};
+  function evSprite(kind, dim) {
+    const k = kind + (dim ? '_d' : ''); if (evCache[k]) return evCache[k];
+    const d = EV_SPR[kind], h = d.rows.length, w = d.rows[0].length;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+    d.rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      let col = d.pal[ch]; if (!col) return;
+      if (dim) { if (kind === 'shrine' && 'yoR'.includes(ch)) col = ch === 'R' ? '#7a2a34' : '#3a3446'; else if (kind === 'chest' && 'gY'.includes(ch)) col = '#4a3a58'; else if (kind === 'well' && 'BW'.includes(ch)) col = '#1a2438'; else if (kind === 'armoury' && ch === 'k') return; }
+      g.fillStyle = col; g.fillRect(x, y, 1, 1);
+    }));
+    return (evCache[k] = c);
+  }
+  const evPics = {};
+  function eventPicture(kind) {
+    if (evPics[kind]) return evPics[kind];
+    const spr = evSprite(kind === 'cursed' ? 'chest' : kind), k = 4, c = document.createElement('canvas');
+    c.width = spr.width * k; c.height = spr.height * k; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(spr, 0, 0, c.width, c.height);
+    return (evPics[kind] = c.toDataURL());
+  }
+  function drawEvent(g, ev, lights) {
+    const x = Math.round(ev.x), y = Math.round(ev.y);
+    if (ev.kind === 'traveller' && ev.used) { // he's gone; his walking stick is left by the wall
+      return;
+    }
+    const kind = ev.kind === 'cursed' ? 'chest' : ev.kind, spr = evSprite(kind, ev.used && ev.kind !== 'traveller');
+    shadow(g, x, y + 2, 12);
+    g.drawImage(spr, x - 7, y + 3 - spr.height);
+    const flick = 0.85 + Math.sin(time * 9 + x) * 0.1;
+    if (ev.kind === 'shrine' && !ev.used) { lights.push({ x: x - 4, y: y - 10, r: 12, a: 0.7 * flick, c: '#ffb070' }); lights.push({ x: x + 4, y: y - 10, r: 12, a: 0.7 * flick, c: '#ffb070' }); lights.push({ x, y: y - 5, r: 18, a: 0.5, c: '#ff4a5a' }); }
+    if (ev.kind === 'cursed' && !ev.used) { lights.push({ x, y: y - 4, r: 20, a: 0.6 + Math.sin(time * 3) * 0.15, c: '#b48bff' }); if (rnd() < 0.08) burst(x + (rnd() - 0.5) * 12, y - 2, '#b48bff', 1, 8, true); }
+    if (ev.kind === 'traveller') lights.push({ x, y: y - 5, r: 14, a: 0.35, c: '#ffd88a' });
+    if (ev.kind === 'well' && !ev.used) lights.push({ x, y: y - 4, r: 16, a: 0.55 + Math.sin(time * 2) * 0.1, c: '#9ad8ff' });
+    if (ev.kind === 'armoury' && ev.items) ev.items.forEach((it, i) => { // three old plinths in front of the rack
+      const ix = x - 11 + i * 11, iy = y + 11;
+      g.fillStyle = '#4a4458'; g.fillRect(ix - 4, iy - 1, 8, 3); g.fillStyle = '#6e6880'; g.fillRect(ix - 4, iy - 2, 8, 1);
+      if (ev.used) { if (ev.taken !== i) { g.fillStyle = '#6a4a32'; g.fillRect(ix - 2, iy - 3, 1, 1); g.fillRect(ix + 1, iy - 3, 2, 1); g.fillRect(ix - 1, iy - 4, 1, 1); } return; }
+      const bob = Math.round(Math.sin(time * 3 + i) * 0.6);
+      g.drawImage(DF.iconSprite(it.icon, it.colors, it.element), ix - 4, iy - 11 + bob);
+      lights.push({ x: ix, y: iy - 7, r: 11, a: 0.5, c: DF.RAR_COLOR[it.rarity] });
+    });
+  }
   function startBash() {
     bump('bashes');
     P.bash = { t: 0.16, hit: new Set() }; P.bashCd = 2.2; P.inv = Math.max(P.inv, 0.3);
@@ -1257,6 +1410,7 @@
     if (room.altar && dist(P, room.altar) < 13) action = room.altar.uses > 0 ? { label: 'Forge', fn: () => DF.UI.openForge(room.altar) } : { label: 'Cold altar', fn: () => DF.UI.toast('This altar has gone cold. Find another on the next floor.') };
     if (room.stairs && dist(P, room.stairs) < 11) action = { label: 'Descend', fn: () => DF.UI.confirmStairs() };
     if (room.fire && !room.fire.used && dist(P, room.fire) < 14) { const f = room.fire; action = { label: 'Rest', fn: () => restAtFire(f) }; }
+    if (room.event && !room.event.used && !room.locked && dist(P, room.event) < 15) { const ev = room.event; action = { label: EVENT_INFO[ev.kind].verb, fn: () => DF.UI.openEvent(ev) }; }
     if (room.shop && !scrollHere && !swapWith) {
       let best = null, bd = 10;
       for (const st of room.shop.stalls) { const d = Math.hypot(P.x - st.x, P.y - st.y); if (!st.sold && d < bd) { bd = d; best = st; } }
@@ -1420,6 +1574,7 @@
   function roomCleared() {
     if (room.cleared) return;
     room.cleared = true; room.locked = false; bump('rooms'); saveMeta();
+    if (room.event && room.event.pending) { const ev = room.event; room.pickups.push({ kind: 'item', item: ev.pending, x: ev.x, y: ev.y + 8 }); burst(ev.x, ev.y - 3, '#b48bff', 18, 40, true); floatText(ev.x, ev.y - 14, 'The curse lifts', '#b48bff', true); ev.pending = null; }
     SND.clear();
     if (room.type === 'fight' && rnd() < 0.22) room.pickups.push(rnd() < 0.5 ? { kind: 'heart', x: P.x + 10, y: P.y } : { kind: 'gold', value: 3 + run.floorN, x: P.x + 10, y: P.y });
     if (room.type === 'fight' && rnd() < 0.12) dropItem(7 * T + 4, 5 * T + 4, lootSpec(), 0);
@@ -1990,6 +2145,7 @@
     if (room.chest) drawChest(lg, room.chest, lights);
     if (room.fire) drawFire(lg, room.fire, lights);
     const objs = [];
+    if (room.event) { const ev = room.event; objs.push({ y: ev.y + 2, draw: () => drawEvent(lg, ev, lights) }); }
     if (room.shop) { const sh = room.shop; drawRug(lg, sh); objs.push({ y: sh.my, draw: () => drawMerchant(lg, sh, lights) }); sh.stalls.forEach((st) => objs.push({ y: st.y, draw: () => drawStall(lg, st, lights) })); }
     for (const p of room.pickups) objs.push({ y: p.y, draw: () => drawPickup(lg, p, lights) });
     for (const e of room.enemies) objs.push({ y: e.y, draw: () => drawEnemy(lg, e, lights) });
@@ -2347,7 +2503,7 @@
       g.fillStyle = r === room ? '#ffe9c8' : r.visited ? (r.cleared || r.type !== 'fight' ? '#6e6478' : '#8a5a5a') : '#2e2836';
       g.fillRect(x, y, c, ch);
       if (r.stairs) { g.fillStyle = '#000'; g.fillRect(x + 2, y + 1, c - 4, ch - 2); }
-      const mark = { boss: '#e2483f', forge: '#ff9a3a', treasure: '#ffcf4a', shop: '#5ad8c0', camp: r.fire && r.fire.used ? '#6a3a3a' : '#ff6a8a' }[r.type];
+      const mark = { boss: '#e2483f', forge: '#ff9a3a', treasure: '#ffcf4a', shop: '#5ad8c0', camp: r.fire && r.fire.used ? '#6a3a3a' : '#ff6a8a', event: r.event && r.event.used ? '#4a3a5a' : '#b48bff' }[r.type];
       if (mark) { g.fillStyle = mark; g.fillRect(x + c / 2 - 1.5, y + ch / 2 - 1.5, 3, 3); }
     }
   }
@@ -2541,13 +2697,13 @@
     meta: { get: () => meta }, run: { get: () => run }, P: { get: () => P }, room: { get: () => room },
   });
   Object.assign(G, {
-    saveMeta, UPGRADES, buyUpgrade, buyStall, sellPrice, sellItem, slotFor, slotKind, itemScore, bagSize, moveItem, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
+    saveMeta, UPGRADES, buyUpgrade, buyStall, eventDo, eventPicture, EVENT_INFO, sellPrice, sellItem, slotFor, slotKind, itemScore, bagSize, moveItem, learnScroll, rerollCost, rerollBlock, rerollFloor, savedRerollBlock, rerollSaved, swapPickup, startRun, quitRun, abandonRun, descend, usePotion, stats, itemStats, equip, unequip, dropRef, getRef, allItems, forge, WEAPON_FEEL,
     prepareNextRun, resize, updateHUD, drawMinimap,
     resetAll() { localStorage.removeItem(META_KEY); meta = defaultMeta(); saveMeta(true); },
     importMeta(m) { if (m && m.v === 1) { meta = Object.assign(defaultMeta(), m, { up: Object.assign(defaultMeta().up, m.up), stats: Object.assign(defaultMeta().stats, m.stats), books: Object.assign(defaultMeta().books, m.books), records: Object.assign(defaultMeta().records, m.records) }); tidyMeta(); saveMeta(true); return true; } return false; },
   });
   // For testing from the browser console.
-  G.debug = { get floor() { return floor; }, enterRoom, breakProp, makeEnemy, dropItem, makeItem, lootSpec, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
+  G.debug = { get floor() { return floor; }, enterRoom, breakProp, makeEnemy, dropItem, makeItem, lootSpec, makeEvent, killAll() { room.enemies.slice().forEach((e) => killEnemy(e)); }, fx };
   DF.G = G;
   DF.boot = function () { resize(); requestAnimationFrame((t) => { lastT = t; frame(t); }); prepareNextRun(); };
 }(window.DF));

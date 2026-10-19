@@ -415,6 +415,58 @@
     };
   }
 
+
+  /* ---------- Room events ---------- */
+  function openEvent(ev, result) {
+    const run = G.run, s = G.stats(), info = G.EVENT_INFO[ev.kind], gold = G.meta.gold;
+    const row = (a, title, desc, price, off) => `<button class="trade-row ev-row" data-ev="${a}" ${off ? 'aria-disabled="true"' : ''}><span><strong>${title}</strong><small>${desc}</small></span>${price ? `<b class="${off ? 'short' : ''}">${price}</b>` : ''}</button>`;
+    let flavour = '', choices = '';
+    if (ev.kind === 'shrine') {
+      const cost = Math.round(s.maxHp * ev.cost), off = G.P.hp <= cost;
+      flavour = 'An altar of red stone, still wet. Candles that never burn down. It wants a little of you.';
+      choices = row('atk', 'Blessing of the Blade', '+2 attack for the rest of the run.', `−${cost} hp`, off)
+        + row('def', 'Blessing of Stone', '+2 defence for the rest of the run.', `−${cost} hp`, off)
+        + row('luck', 'Blessing of Fortune', '+6% luck: better finds for the rest of the run.', `−${cost} hp`, off);
+      if (off) flavour += ' <b class="t-down">You’re too hurt to give that much.</b>';
+    } else if (ev.kind === 'cursed') {
+      flavour = 'A chest bound in purple chains. It hums. Something in the dark is guarding it.';
+      choices = row('open', 'Break the seal', 'A rare or better item, but two elite monsters will ambush you first.', 'Risky');
+    } else if (ev.kind === 'traveller') {
+      const off = run.potions < 1;
+      flavour = '“Please… I’m hurt. Do you have a potion? I can pay.”';
+      choices = row('give', 'Give him a potion', `He pays ${ev.reward} gold and an item, uncommon or better. You have ${run.potions} potion${run.potions === 1 ? '' : 's'}.`, '1 potion', off);
+    } else if (ev.kind === 'well') {
+      const off = gold < ev.cost;
+      flavour = `Old coins glint far down in the dark water. ${ev.wishes} wish${ev.wishes === 1 ? '' : 'es'} left before it goes still.`;
+      choices = row('wish', 'Toss in a coin', 'A full heal, a potion, a trinket, gold back… or just a splash.', `${ev.cost}g`, off);
+    } else if (ev.kind === 'armoury') {
+      flavour = 'Three pieces still hang on the rack. Touch one and the rest will crumble.';
+      choices = `<div class="grid ev-grid">${ev.items.map((it, i) => `<button class="tile" data-evi="${i}" style="--r:${DF.RAR_COLOR[it.rarity]}">${tileArrow(it)}<img src="${DF.bigPicture('item', it, 3)}" alt=""><span>${esc(it.name)}</span></button>`).join('')}</div>`;
+    }
+    const res = result ? `<p class="ev-result">${result}</p>` : '';
+    const doneNow = ev.used || (result && ev.kind !== 'well');
+    const s2 = openSheet(`<div class="ev-head"><img class="pix" src="${G.eventPicture(ev.kind)}" alt=""><h2 class="title">${esc(info.name)}</h2></div><p class="sub">${flavour}</p>${res}${doneNow ? '' : choices}
+      <div class="row"><button class="btn ghost" data-a="close" data-focus>${doneNow ? 'Done' : 'Leave'}</button></div>`);
+    s2.onclick = (e) => {
+      const t = e.target.closest('[data-ev],[data-evi],[data-a]'); if (!t) return;
+      if (t.dataset.a === 'close') { closeSheet(); return; }
+      if (t.dataset.evi != null && !t.dataset.ok) { // first tap shows it, second takes it
+        const it = ev.items[+t.dataset.evi];
+        const p = openSheet(`<p class="sub">The ${esc(info.name.toLowerCase())}</p>${itemBlock(it, true)}${compareBlock(it)}
+          <div class="row"><button class="btn primary" data-a="take" data-focus>Take this one</button><button class="btn ghost" data-a="back">Back</button></div>`, 'item');
+        p.onclick = (e2) => {
+          const b = e2.target.closest('[data-a]'); if (!b) return;
+          if (b.dataset.a === 'back') { openEvent(ev); return; }
+          const r = G.eventDo(ev, t.dataset.evi); openEvent(ev, r.text);
+        };
+        return;
+      }
+      const r = G.eventDo(ev, t.dataset.ev);
+      if (!r.ok) { if (r.text) toast(r.text); return; }
+      if (ev.kind === 'cursed') { closeSheet(); toast(r.text, 3500, true); return; }
+      openEvent(ev, r.text);
+    };
+  }
   /* ---------- The forge ---------- */
   function openForge(altar) {
     const pickd = [];
@@ -868,7 +920,7 @@
     const off = AI.onChange(() => { if ($('#modal').hidden || !s.querySelector('#s-on')) { off(); return; } if (st.mode === 'device' && document.activeElement && document.activeElement.tagName !== 'INPUT') draw(); });
   }
 
-  DF.UI = { openInventory, toggleInventory, openStats, openSwap, openScroll, openStall, openTrade, toast, banner, discovery, bossBar, setAction, renderSlots, openItem, openForge, confirmStairs, showDeath, showCamp, waitForDream, togglePause, pause: () => pause(), esc, isTouch: () => touch, openSettings };
+  DF.UI = { openInventory, toggleInventory, openStats, openSwap, openScroll, openStall, openTrade, openEvent, toast, banner, discovery, bossBar, setAction, renderSlots, openItem, openForge, confirmStairs, showDeath, showCamp, waitForDream, togglePause, pause: () => pause(), esc, isTouch: () => touch, openSettings };
   // Start up.
   setTouch(touch);
   $('#potion-img').src = DF.bigPicture('item', { icon: 'potion', colors: ['#ff4a6a', '#cfc8dc'], element: 'none' }, 3);
