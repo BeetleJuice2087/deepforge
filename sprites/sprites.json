@@ -1706,7 +1706,7 @@
    "type": "looks",
    "box": [
     20,
-    13
+    12
    ],
    "match": [
     "hydra",
@@ -1715,7 +1715,7 @@
     "wyrm"
    ],
    "kinds": [],
-   "cols": 15
+   "cols": 12
   },
   {
    "set": "worm",
@@ -1735,7 +1735,7 @@
    "kinds": [
     "worm"
    ],
-   "cols": 14
+   "cols": 13
   },
   {
    "set": "moth",

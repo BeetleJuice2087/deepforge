@@ -135,12 +135,12 @@
     const sp = DF.monsterSprite(spec, k === 'elite' ? 'elite' : '');
     const zoom = Math.max(4, Math.min(16, Math.floor(200 / Math.max(sp.w, sp.h))));
     draw($('#big'), spec, k, zoom);
-    // In a room: floor tiles, the hero, and the monster at game size (bosses are drawn 3x in the game).
+    // In a room: floor tiles, the hero, and the monster at game size (bosses are drawn 3x in the game, 2x for very big ones).
     const Z = 4, T = 8, W = 15, H = 7, cv = $('#room'); cv.width = W * T * Z; cv.height = H * T * Z;
     const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { g.fillStyle = (x + y) % 2 ? '#2a2230' : '#251e2b'; g.fillRect(x * T * Z, y * T * Z, T * Z, T * Z); }
     const hero = new Image(); hero.src = DF.bigPicture('hero', { cls: 'knight' }, 1);
-    const scale = k === 'boss' ? 3 : 1, mw = sp.w * scale * Z, mh = sp.h * scale * Z, ground = cv.height - 14 * Z;
+    const bs = Math.max(sp.w, sp.h) > 15 ? 2 : 3, scale = k === 'boss' ? bs : 1, mw = sp.w * scale * Z, mh = sp.h * scale * Z, ground = cv.height - 14 * Z;
     g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(cv.width * 0.62, ground, mw * 0.4, 3 * Z, 0, 0, 7); g.fill();
     g.drawImage(sp.left, Math.round(cv.width * 0.62 - mw / 2), ground - mh, mw, mh);
     hero.onload = () => { g.drawImage(hero, Math.round(cv.width * 0.2), ground - hero.height * Z, hero.width * Z, hero.height * Z); };
@@ -151,7 +151,7 @@
       <dt>Name</dt><dd>${esc(spec.name)}</dd>
       <dt>Body kind</dt><dd>${esc(src.kind)}</dd>
       <dt>Picture from</dt><dd>${esc(src.from)}${src.set ? ` · <b>monsters/${esc(src.set)}.png</b>` : ''}</dd>
-      <dt>Size</dt><dd class="${big || tiny ? 'warn' : ''}">${sp.w - 2} × ${sp.h - 2} pixels${k === 'boss' ? ` (×3 as a boss = ${(sp.w - 2) * 3} × ${(sp.h - 2) * 3})` : ''}${big ? ' · very big' : tiny ? ' · very small' : ''}</dd>
+      <dt>Size</dt><dd class="${big || tiny ? 'warn' : ''}">${sp.w - 2} × ${sp.h - 2} pixels${k === 'boss' ? ` (×${bs} as a boss = ${(sp.w - 2) * bs} × ${(sp.h - 2) * bs})` : ''}${big ? ' · very big' : tiny ? ' · very small' : ''}</dd>
       ${spec.behaviour ? `<dt>Behaviour</dt><dd>${esc(spec.behaviour)}${spec.abilities && spec.abilities.length ? ' · ' + spec.abilities.map(esc).join(', ') : ''}</dd>` : ''}
       ${best ? `<dt>Bestiary</dt><dd>${esc(best.n)}${best.s && best.s[0] ? ' · ' + esc(best.s[0]) : ''}</dd>` : ''}`;
     // The same name in every element.
