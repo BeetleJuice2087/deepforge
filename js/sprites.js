@@ -533,7 +533,7 @@
     const keys = {}; for (const k in man.keys) keys[k] = rgb(man.keys[k]);
     const gap = man.gap == null ? 1 : man.gap;
     const found = { parts: 0, shapes: 0 };
-    const sheets = await Promise.all(man.sheets.map((sh) => loadImage(base + sh.file).then((im) => [sh, im], () => null)));
+    const sheets = await Promise.all(man.sheets.map((sh) => loadImage(base + sh.file + (sh.h ? '?h=' + sh.h : '')).then((im) => [sh, im], () => null)));
     for (const got of sheets) {
       if (!got) continue;
       const [sh, im] = got, [w, h] = sh.box;

@@ -29,7 +29,8 @@
     "crown",
     "cyclops",
     "antenna"
-   ]
+   ],
+   "h": "6903da60"
   },
   {
    "file": "parts/middles.png",
@@ -50,7 +51,8 @@
     "ribs",
     "brute",
     "cape"
-   ]
+   ],
+   "h": "561be3da"
   },
   {
    "file": "parts/bottoms.png",
@@ -71,7 +73,8 @@
     "puddle",
     "spider",
     "stumps"
-   ]
+   ],
+   "h": "c44d4d87"
   },
   {
    "file": "parts/beast-backs.png",
@@ -89,7 +92,8 @@
     "stinger",
     "fin",
     "club"
-   ]
+   ],
+   "h": "ca7ff7e6"
   },
   {
    "file": "parts/beast-middles.png",
@@ -108,7 +112,8 @@
     "stripes",
     "hump",
     "shell"
-   ]
+   ],
+   "h": "acf153e4"
   },
   {
    "file": "parts/beast-heads.png",
@@ -127,7 +132,8 @@
     "long neck",
     "skull",
     "antlers"
-   ]
+   ],
+   "h": "e817db37"
   },
   {
    "file": "monsters.png",
@@ -210,7 +216,8 @@
     "bird",
     "bug",
     "horse"
-   ]
+   ],
+   "h": "d024e14f"
   },
   {
    "set": "cultist",
@@ -229,7 +236,8 @@
    "kinds": [
     "cultist"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "e7c51cf2"
   },
   {
    "set": "cultist_leader",
@@ -247,7 +255,8 @@
     "cult master"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "26624bf1"
   },
   {
    "set": "dark_priest",
@@ -265,7 +274,8 @@
     "abbot"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "8fd524cc"
   },
   {
    "set": "goblin_archer",
@@ -284,7 +294,8 @@
    "kinds": [
     "archer"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "48698266"
   },
   {
    "set": "orc_shaman",
@@ -301,7 +312,8 @@
     "hexer"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "e9b6b242"
   },
   {
    "set": "skeleton_mage",
@@ -321,7 +333,8 @@
    "kinds": [
     "lich"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "c2314103"
   },
   {
    "set": "zombie_brute",
@@ -338,7 +351,8 @@
     "plague brute"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "25207ae1"
   },
   {
    "set": "axe_brute",
@@ -357,7 +371,8 @@
     "brute"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "5333902b"
   },
   {
    "set": "halberd",
@@ -375,7 +390,8 @@
     "glaive"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "09b76880"
   },
   {
    "set": "knight_spear",
@@ -393,7 +409,8 @@
     "dragoon"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "d79f750e"
   },
   {
    "set": "shield_bearer",
@@ -414,7 +431,8 @@
    "kinds": [
     "shieldbearer"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "acb77f36"
   },
   {
    "set": "spearman",
@@ -434,7 +452,8 @@
    "kinds": [
     "spearman"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "870e8bb5"
   },
   {
    "set": "sword_guard",
@@ -457,7 +476,8 @@
    "kinds": [
     "knight"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "388b9a91"
   },
   {
    "set": "assassin",
@@ -476,7 +496,8 @@
    "kinds": [
     "rogue"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "f1c411ef"
   },
   {
    "set": "bandit",
@@ -497,7 +518,8 @@
    "kinds": [
     "rogue"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "667b5a51"
   },
   {
    "set": "banshee",
@@ -515,7 +537,8 @@
    "kinds": [
     "banshee"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "fd947862"
   },
   {
    "set": "ninja",
@@ -532,7 +555,8 @@
    "kinds": [
     "rogue"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "4b8de201"
   },
   {
    "set": "thief",
@@ -553,7 +577,8 @@
    "kinds": [
     "rogue"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "52faf1a7"
   },
   {
    "set": "wraith_knight",
@@ -572,7 +597,8 @@
     "doom knight"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "cfe1bcce"
   },
   {
    "set": "elemental",
@@ -590,7 +616,8 @@
    "kinds": [
     "flame"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "cd446587"
   },
   {
    "set": "eyebeast",
@@ -609,7 +636,8 @@
    "kinds": [
     "eyeball"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "18880a29"
   },
   {
    "set": "fungus",
@@ -629,7 +657,8 @@
    "kinds": [
     "mushroom"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "4a29c482"
   },
   {
    "set": "lizardman",
@@ -648,7 +677,8 @@
    "kinds": [
     "lizardman"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "5af99960"
   },
   {
    "set": "ogre",
@@ -668,7 +698,8 @@
    "kinds": [
     "troll"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "033f6cd8"
   },
   {
    "set": "ooze",
@@ -691,7 +722,8 @@
     "slime",
     "blob"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "fa745337"
   },
   {
    "set": "plant",
@@ -714,7 +746,8 @@
     "flytrap",
     "flower"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "590a9cb7"
   },
   {
    "set": "troglodyte",
@@ -732,7 +765,8 @@
    "kinds": [
     "ghoul"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "779d3e07"
   },
   {
    "set": "demon",
@@ -751,7 +785,8 @@
    "kinds": [
     "demon"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "f0bba189"
   },
   {
    "set": "ghost",
@@ -771,7 +806,8 @@
    "kinds": [
     "ghost"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "a5082261"
   },
   {
    "set": "imp",
@@ -789,7 +825,8 @@
    "kinds": [
     "imp"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "ff24a916"
   },
   {
    "set": "knight",
@@ -808,7 +845,8 @@
    "kinds": [
     "knight"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "80385e6e"
   },
   {
    "set": "mimic",
@@ -826,7 +864,8 @@
    "kinds": [
     "mimic"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "5e479ca5"
   },
   {
    "set": "orc",
@@ -844,7 +883,8 @@
    "kinds": [
     "orc"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "372a0979"
   },
   {
    "set": "angler",
@@ -862,7 +902,8 @@
    "kinds": [
     "angler"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "a6f0894f"
   },
   {
    "set": "fish",
@@ -881,7 +922,8 @@
    "kinds": [
     "fish"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "d8304cee"
   },
   {
    "set": "piranha",
@@ -897,7 +939,8 @@
     "barracuda"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "8339fbc4"
   },
   {
    "set": "rat",
@@ -915,7 +958,8 @@
     "rodent"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "1db0ac26"
   },
   {
    "set": "shark",
@@ -931,7 +975,8 @@
    "kinds": [
     "shark"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "27b0e4ae"
   },
   {
    "set": "toad",
@@ -948,7 +993,8 @@
    "kinds": [
     "frog"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "714a9afc"
   },
   {
    "set": "beetle",
@@ -969,7 +1015,8 @@
     "beetle",
     "bug"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "bc03b1b7"
   },
   {
    "set": "centipede",
@@ -987,7 +1034,8 @@
    "kinds": [
     "centipede"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "810884b8"
   },
   {
    "set": "scorpion",
@@ -1003,7 +1051,8 @@
    "kinds": [
     "scorpion"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "9d583833"
   },
   {
    "set": "shade",
@@ -1020,7 +1069,8 @@
    "kinds": [
     "ghost"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "7fcb7436"
   },
   {
    "set": "specter",
@@ -1039,7 +1089,8 @@
    "kinds": [
     "ghost"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "0d01b98c"
   },
   {
    "set": "wraith",
@@ -1055,7 +1106,8 @@
    "kinds": [
     "wraith"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "031f8cbf"
   },
   {
    "set": "cloud",
@@ -1076,7 +1128,8 @@
    "kinds": [
     "cloud"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "7ebe86f2"
   },
   {
    "set": "mushroom",
@@ -1094,7 +1147,8 @@
    "kinds": [
     "mushroom"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "36dcdff4"
   },
   {
    "set": "orb",
@@ -1112,7 +1166,8 @@
    "kinds": [
     "orb"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "ba1fc601"
   },
   {
    "set": "spiky",
@@ -1132,7 +1187,8 @@
    "kinds": [
     "spiky"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "f95e16da"
   },
   {
    "set": "star",
@@ -1151,7 +1207,8 @@
    "kinds": [
     "star"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "de145fd3"
   },
   {
    "set": "bonebeast",
@@ -1172,7 +1229,8 @@
    "kinds": [
     "bonebeast"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "7698ab5d"
   },
   {
    "set": "goblin",
@@ -1189,7 +1247,8 @@
    "kinds": [
     "goblin"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "7923d4b6"
   },
   {
    "set": "golem",
@@ -1208,7 +1267,8 @@
    "kinds": [
     "golem"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "89e27894"
   },
   {
    "set": "snake",
@@ -1230,7 +1290,8 @@
     "snake",
     "serpent"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "6b4fea47"
   },
   {
    "set": "spider",
@@ -1249,7 +1310,8 @@
    "kinds": [
     "spider"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "10d35e3b"
   },
   {
    "set": "zombie",
@@ -1269,7 +1331,8 @@
    "kinds": [
     "zombie"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "693ddecf"
   },
   {
    "set": "cave_slug",
@@ -1286,7 +1349,8 @@
    "kinds": [
     "slug"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "1fea080a"
   },
   {
    "set": "gargoyle",
@@ -1302,7 +1366,8 @@
    "kinds": [
     "gargoyle"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "ec131eb5"
   },
   {
    "set": "ghoul",
@@ -1319,7 +1384,8 @@
    "kinds": [
     "ghoul"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "f3cd370a"
   },
   {
    "set": "mummy",
@@ -1336,7 +1402,8 @@
    "kinds": [
     "mummy"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "0a58fb2a"
   },
   {
    "set": "vampire",
@@ -1354,7 +1421,8 @@
    "kinds": [
     "vampire"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "9117f2e4"
   },
   {
    "set": "wisp_mage",
@@ -1376,7 +1444,8 @@
    "kinds": [
     "wizard"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "c97f7671"
   },
   {
    "set": "beholder",
@@ -1393,7 +1462,8 @@
    "kinds": [
     "beholder"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "fc58bd82"
   },
   {
    "set": "mind_flayer",
@@ -1412,7 +1482,8 @@
    "kinds": [
     "mindflayer"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "06461407"
   },
   {
    "set": "soul_reaper",
@@ -1430,7 +1501,8 @@
    "kinds": [
     "reaper"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "f609e24c"
   },
   {
    "set": "medusa",
@@ -1449,7 +1521,8 @@
    "kinds": [
     "medusa"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "74be79e2"
   },
   {
    "set": "fairy",
@@ -1466,7 +1539,8 @@
     "pixie"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "94cf5a41"
   },
   {
    "set": "raven",
@@ -1491,7 +1565,8 @@
    "kinds": [
     "bird"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "ff109efb"
   },
   {
    "set": "crab",
@@ -1509,7 +1584,8 @@
    "kinds": [
     "crab"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "cead732f"
   },
   {
    "set": "jellyfish",
@@ -1528,7 +1604,8 @@
    "kinds": [
     "jelly"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "3ff41758"
   },
   {
    "set": "lobster",
@@ -1546,7 +1623,8 @@
    "kinds": [
     "lobster"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "4e8557e4"
   },
   {
    "set": "octopus",
@@ -1567,7 +1645,8 @@
     "octopus",
     "tentacle"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "a1231640"
   },
   {
    "set": "bat",
@@ -1585,7 +1664,8 @@
    "kinds": [
     "bat"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "e80bd86c"
   },
   {
    "set": "bear",
@@ -1601,7 +1681,8 @@
     "ursine"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "79df81c4"
   },
   {
    "set": "boar",
@@ -1619,7 +1700,8 @@
     "tusker"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "d6ae4972"
   },
   {
    "set": "hound",
@@ -1638,7 +1720,8 @@
     "cur"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "2a0192eb"
   },
   {
    "set": "wolf",
@@ -1656,7 +1739,8 @@
     "dire wolf"
    ],
    "kinds": [],
-   "cols": 10
+   "cols": 10,
+   "h": "bc0960ff"
   },
   {
    "set": "skeleton",
@@ -1676,7 +1760,8 @@
    "kinds": [
     "skeleton"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "5d652660"
   },
   {
    "set": "basilisk",
@@ -1698,7 +1783,8 @@
    "kinds": [
     "basilisk"
    ],
-   "cols": 14
+   "cols": 14,
+   "h": "a2d352e1"
   },
   {
    "set": "hydra",
@@ -1715,7 +1801,8 @@
     "wyrm"
    ],
    "kinds": [],
-   "cols": 12
+   "cols": 12,
+   "h": "821a4516"
   },
   {
    "set": "worm",
@@ -1735,7 +1822,8 @@
    "kinds": [
     "worm"
    ],
-   "cols": 13
+   "cols": 13,
+   "h": "1ec71227"
   },
   {
    "set": "moth",
@@ -1754,7 +1842,8 @@
    "kinds": [
     "flutter"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "61993c28"
   },
   {
    "set": "ghostly_blade",
@@ -1775,7 +1864,8 @@
    "kinds": [
     "blade"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "7846c6fd"
   },
   {
    "set": "treant",
@@ -1798,7 +1888,8 @@
    "kinds": [
     "tree"
    ],
-   "cols": 10
+   "cols": 10,
+   "h": "79d70313"
   },
   {
    "set": "harpy",
@@ -1818,7 +1909,8 @@
    "kinds": [
     "harpy"
    ],
-   "cols": 19
+   "cols": 19,
+   "h": "60038dc0"
   }
  ]
 }
