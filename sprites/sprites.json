@@ -1431,6 +1431,394 @@
     "reaper"
    ],
    "cols": 10
+  },
+  {
+   "set": "medusa",
+   "file": "monsters/medusa.png",
+   "type": "layers",
+   "box": [
+    12,
+    14
+   ],
+   "match": [
+    "medusa",
+    "gorgon",
+    "snake hair",
+    "stone gaze"
+   ],
+   "kinds": [
+    "medusa"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "fairy",
+   "file": "monsters/fairy.png",
+   "type": "layers",
+   "box": [
+    11,
+    12
+   ],
+   "match": [
+    "fairy",
+    "fairies",
+    "faerie",
+    "pixie"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "raven",
+   "file": "monsters/raven.png",
+   "type": "layers",
+   "box": [
+    13,
+    11
+   ],
+   "match": [
+    "raven",
+    "crow",
+    "bird",
+    "hawk",
+    "owl",
+    "vulture",
+    "falcon",
+    "magpie",
+    "rook",
+    "phoenix"
+   ],
+   "kinds": [
+    "bird"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "crab",
+   "file": "monsters/crab.png",
+   "type": "layers",
+   "box": [
+    19,
+    15
+   ],
+   "match": [
+    "crab",
+    "shrimp",
+    "crustacean"
+   ],
+   "kinds": [
+    "crab"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "jellyfish",
+   "file": "monsters/jellyfish.png",
+   "type": "layers",
+   "box": [
+    15,
+    18
+   ],
+   "match": [
+    "jellyfish",
+    "jelly",
+    "man o war",
+    "medusoid"
+   ],
+   "kinds": [
+    "jelly"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "lobster",
+   "file": "monsters/lobster.png",
+   "type": "layers",
+   "box": [
+    14,
+    19
+   ],
+   "match": [
+    "lobster",
+    "crayfish",
+    "crawdad"
+   ],
+   "kinds": [
+    "lobster"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "octopus",
+   "file": "monsters/octopus.png",
+   "type": "layers",
+   "box": [
+    19,
+    19
+   ],
+   "match": [
+    "octopus",
+    "squid",
+    "kraken",
+    "cuttlefish",
+    "octo"
+   ],
+   "kinds": [
+    "octopus",
+    "tentacle"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "bat",
+   "file": "monsters/bat.png",
+   "type": "layers",
+   "box": [
+    10,
+    6
+   ],
+   "match": [
+    "bat",
+    "bats",
+    "vampire bat"
+   ],
+   "kinds": [
+    "bat"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "bear",
+   "file": "monsters/bear.png",
+   "type": "layers",
+   "box": [
+    11,
+    9
+   ],
+   "match": [
+    "bear",
+    "grizzly",
+    "ursine"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "boar",
+   "file": "monsters/boar.png",
+   "type": "layers",
+   "box": [
+    12,
+    8
+   ],
+   "match": [
+    "boar",
+    "hog",
+    "pig",
+    "swine",
+    "tusker"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "hound",
+   "file": "monsters/hound.png",
+   "type": "layers",
+   "box": [
+    12,
+    9
+   ],
+   "match": [
+    "hound",
+    "dog",
+    "jackal",
+    "hellhound",
+    "mastiff",
+    "cur"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "wolf",
+   "file": "monsters/wolf.png",
+   "type": "layers",
+   "box": [
+    13,
+    10
+   ],
+   "match": [
+    "wolf",
+    "wolves",
+    "warg",
+    "werewolf",
+    "dire wolf"
+   ],
+   "kinds": [],
+   "cols": 10
+  },
+  {
+   "set": "skeleton",
+   "file": "monsters/skeleton.png",
+   "type": "layers",
+   "box": [
+    10,
+    11
+   ],
+   "match": [
+    "skeleton",
+    "skeletal",
+    "skeletons",
+    "bones",
+    "skull"
+   ],
+   "kinds": [
+    "skeleton"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "basilisk",
+   "file": "monsters/basilisk.png",
+   "type": "looks",
+   "box": [
+    19,
+    11
+   ],
+   "match": [
+    "basilisk",
+    "salamander",
+    "lizard",
+    "drake",
+    "raptor",
+    "iguana",
+    "gecko"
+   ],
+   "kinds": [
+    "basilisk"
+   ],
+   "cols": 14
+  },
+  {
+   "set": "hydra",
+   "file": "monsters/hydra.png",
+   "type": "looks",
+   "box": [
+    20,
+    13
+   ],
+   "match": [
+    "hydra",
+    "wyvern",
+    "dragon",
+    "wyrm"
+   ],
+   "kinds": [],
+   "cols": 15
+  },
+  {
+   "set": "worm",
+   "file": "monsters/worm.png",
+   "type": "looks",
+   "box": [
+    19,
+    8
+   ],
+   "match": [
+    "worm",
+    "leech",
+    "maggot",
+    "grub",
+    "larva"
+   ],
+   "kinds": [
+    "worm"
+   ],
+   "cols": 14
+  },
+  {
+   "set": "moth",
+   "file": "monsters/moth.png",
+   "type": "looks",
+   "box": [
+    16,
+    13
+   ],
+   "match": [
+    "moth",
+    "butterfly",
+    "butterflies",
+    "dragonfly"
+   ],
+   "kinds": [
+    "flutter"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "ghostly_blade",
+   "file": "monsters/ghostly_blade.png",
+   "type": "looks",
+   "box": [
+    7,
+    13
+   ],
+   "match": [
+    "ghostly blade",
+    "blade",
+    "sword",
+    "dagger",
+    "haunted sword",
+    "living sword"
+   ],
+   "kinds": [
+    "blade"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "treant",
+   "file": "monsters/treant.png",
+   "type": "looks",
+   "box": [
+    17,
+    17
+   ],
+   "match": [
+    "treant",
+    "ent",
+    "tree",
+    "oak",
+    "dryad",
+    "willow",
+    "birch",
+    "treefolk"
+   ],
+   "kinds": [
+    "tree"
+   ],
+   "cols": 10
+  },
+  {
+   "set": "harpy",
+   "file": "monsters/harpy.png",
+   "type": "looks",
+   "box": [
+    16,
+    15
+   ],
+   "match": [
+    "harpy",
+    "harpies",
+    "siren",
+    "griffin",
+    "gryphon"
+   ],
+   "kinds": [
+    "harpy"
+   ],
+   "cols": 19
   }
  ]
 }

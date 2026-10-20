@@ -725,7 +725,7 @@
   function makeEnemy(spec, x, y, o) {
     const n = run.floorN, tier = spec.tier || 2;
     const sprite = DF.monsterSprite(spec, o.elite ? 'elite' : '');
-    const scale = o.boss ? 3 : 1;
+    const scale = o.boss ? (Math.max(sprite.w, sprite.h) > 15 ? 2 : 3) : 1; // big new beasts (octopus, crab) would fill the room at 3x
     const body = DF.bodyType(spec);
     const e = { spec, x, y, vx: 0, vy: 0, beh: spec.behaviour, abil: new Set(spec.abilities || []), boss: !!o.boss, elite: !!o.elite, child: !!o.child, minion: !!o.minion,
       scale, flying: FLYERS.has(body), w: sprite.w * scale, h: sprite.h * scale, dir: x > P.x ? -1 : 1, t: rnd() * 2, t2: rnd() * 3, t3: rnd() * 4, state: 'move',

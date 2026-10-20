@@ -49,7 +49,8 @@ MONSTER SETS (the monsters/ folder)
   Most have THREE rows: tops, middles and bottoms. The game stacks one
   of each (they line up box for box), so 10 x 10 x 10 = 1000 looks.
   A few (slug, gargoyle, ghoul, mummy, vampire, wisp mage, beholder,
-  mind flayer, reaper, thief, assassin, bandit, ninja, wraith) have ONE row of
+  mind flayer, reaper, thief, assassin, bandit, ninja, wraith, basilisk,
+  hydra, worm, moth, ghostly blade, treant, harpy) have ONE row of
   whole monsters instead.
   guides/monsters/ shows each file big, with its box size.
   - Change or add a look: draw in a box of that monster's file.
